@@ -8,34 +8,6 @@ Created on Tue Oct  8 10:31:41 2019
 
 import numpy as np
 
-def load_data(file_name="train.csv", sub_sample=True, add_outlier=False):
-    """Load data."""
-    path_dataset = file_name
-    
-    
-    ID = np.genfromtxt(
-        path_dataset, delimiter=",", skip_header=1, usecols=0, dtype=int)
-    
-    converter = {1: lambda x: 0 if b"s" in x else 1}  #dummy coding
-
-    label= np.genfromtxt(
-        path_dataset, delimiter=",", skip_header=1, usecols=1, dtype=float, converters=converter)
-
-    features = np.genfromtxt(path_dataset, delimiter=",", usecols=range(2,32), dtype=float, skip_header=1)
-
-    
-    # sub-sample
-    if sub_sample:
-        ID = ID[::50]
-        label = label[::50]
-        features = features[::50]
-
-    #if add_outlier:
-        # outlier experiment
-        #height = np.concatenate([height, [1.1, 1.2]])
-        #weight = np.concatenate([weight, [51.5/0.454, 55.3/0.454]])
-    return ID, label, features
-
 def build_model_data(features, label):
     """Form (y,tX) to get regression data in matrix form."""
     y = label

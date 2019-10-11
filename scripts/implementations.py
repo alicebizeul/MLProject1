@@ -7,6 +7,7 @@ Created on Tue Oct  8 10:31:41 2019
 """
 
 import numpy as np
+from proj1_helpers import *
 
 def build_model_data(features, label):
     """Form (y,tX) to get regression data in matrix form."""
@@ -21,15 +22,15 @@ def calculate_mse(e):
     """Calculate the mse for vector e."""
     return 1/2*np.mean(e**2)
 
-
-
 def compute_loss(y, tx, w):
     """Calculate the loss.
 
     You can calculate the loss using mse or mae.
     """
-    e = y - tx.dot(w)
-    return calculate_mse(e)
+    # TO DISCUSS
+    #e = y - tx.dot(w)
+    #return calculate_mse(e)
+    return class_error(y,predict_labels(w,tx))
 
 def compute_gradient(y, tx, w):
     """Compute the gradient."""
@@ -165,5 +166,21 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         
     print("Regularized logistic regression: w={}".format(w))   
     return w, loss
+
+def accuracy(y,y_pred):
+    return np.sum(y == y_pred)/len(y)
+
+def classification_error(y, ypred):
+    return 1-accuracy(y,y_pred)
+
+def class_error(y,ypred):
+    
+    class1 = np.sum(ypred[y ==1] != 1)/np.sum(y == 1)
+    class2 = np.sum(ypred[y == -1] != -1)/np.sum(y == -1)
+    
+    return class1 + class2
+
+def standardize(tx):
+    return (tx - np.mean(tx, axis = 0))/ np.std(tx,axis = 0)
 
 

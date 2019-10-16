@@ -19,8 +19,12 @@ def build_model_data(features, label):
 
 
 def calculate_mse(e):
-    """Calculate the mse for vector e."""
+    """Calculate the mean square error for vector e."""
     return 1/2*np.mean(e**2)
+
+def calculate_rmse(mse):
+    """Calculate the root mean square error using the mean square error as input """
+    return np.sqrt(2*mse)
 
 def compute_loss(y, tx, w):
     """Calculate the loss.
@@ -182,5 +186,12 @@ def class_error(y,ypred):
 
 def standardize(tx):
     return (tx - np.mean(tx, axis = 0))/ np.std(tx,axis = 0)
+
+def build_poly(x, degree):
+    """polynomial basis functions for input data x, for j=0 up to j=degree."""
+    tx = np.ones(x.shape[0])
+    for i in range(1,degree+1):
+        tx = np.c_[tx,x**i]
+    return tx
 
 

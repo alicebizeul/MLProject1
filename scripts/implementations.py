@@ -195,3 +195,42 @@ def build_poly(x, degree):
     return tx
 
 
+def split_subsets(tX, y):
+    # Splitting the dataset based on the value of PRI_jet_num
+    PRI_jet_num = tX[:, 22]
+    
+    mask_ss0 = PRI_jet_num == 0
+    ss0_tX = tX[mask_ss0]
+    ss0_y = y[mask_ss0]
+    print("Subset 0 contains {} samples ".format(mask_ss0.sum()))
+    
+    mask_ss1 = PRI_jet_num == 1
+    ss1_tX = tX[mask_ss1]
+    ss1_y = y[mask_ss1]
+    print("Subset 1 contains {} samples ".format(mask_ss1.sum()))
+    
+    mask_ss2 = PRI_jet_num == 2
+    ss2_tX = tX[mask_ss2]
+    ss2_y = y[mask_ss2]
+    print("Subset 2 contains {} samples ".format(mask_ss2.sum()))
+    
+    mask_ss3 = PRI_jet_num == 3
+    ss3_tX = tX[mask_ss3]
+    ss3_y = y[mask_ss3]
+    print("Subset 3 contains {} samples ".format(mask_ss3.sum()))
+    
+    #Now, we can remove the categorical feature "PRI_jet_num" for our subsets
+    ss0_tX = np.delete(ss0_tX, 22, axis=1)
+    ss1_tX = np.delete(ss1_tX, 22, axis=1)
+    ss2_tX = np.delete(ss2_tX, 22, axis=1)
+    ss3_tX = np.delete(ss3_tX, 22, axis=1)
+    
+    # Removing undefined features for the corresponding subsets
+    features_undefined_ss01 = [4, 5, 6, 12, 25, 26, 27]
+    ss0_tX = np.delete(ss0_tX, features_undefined_ss01, axis=1)
+    ss1_tX = np.delete(ss1_tX, features_undefined_ss01, axis=1)
+         
+    features_undefined_ss0 = [18, 19, 20] # taking into account indices of the features previously removed
+    ss0_tX = np.delete(ss0_tX, features_undefined_ss0, axis=1)
+
+    return ss0_tX, ss0_y, ss1_tX, ss1_y, ss2_tX, ss2_y, ss3_tX, ss3_y

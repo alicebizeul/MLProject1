@@ -8,6 +8,7 @@ Created on Tue Oct  8 10:31:41 2019
 
 import numpy as np
 from proj1_helpers import *
+import matplotlib.pyplot as plt
 
 def build_model_data(features, label):
     """Form (y,tX) to get regression data in matrix form."""
@@ -234,3 +235,37 @@ def split_subsets(tX, y):
     ss0_tX = np.delete(ss0_tX, features_undefined_ss0, axis=1)
 
     return ss0_tX, ss0_y, ss1_tX, ss1_y, ss2_tX, ss2_y, ss3_tX, ss3_y
+
+
+def histo_visualization(feature_1,feature_2):
+    fig = plt.figure()
+   
+    # plot 1
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax1 = plt.hist(feature_1,bins=100)
+
+    # plot 2
+    ax2 = fig.add_subplot(1, 2, 2)
+    ax2 = plt.hist(feature_2,bins=100)
+    
+    return fig
+
+def scatter_visualization(label, feature_1,feature_2,index):
+    fig = plt.figure()
+   
+    # plot 1
+    ax1 = fig.add_subplot(1, 3, 1)
+    ax1.scatter(feature_1,label, marker=".", color='b', s=5)
+    ax1.set_ylabel("Boson")
+    ax1.set_xlabel("feature N°" + str(index+1))
+    ax1.grid()
+
+    # plot 2
+    ax2 = fig.add_subplot(1, 3, 2)
+    ax2.scatter(feature_2, label, marker=".", color='b', s=5)
+    ax2.set_ylabel("Boson")
+    ax2.set_xlabel("feature N°" + str(index+2))
+    ax2.grid()
+
+    return fig
+

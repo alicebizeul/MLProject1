@@ -129,6 +129,12 @@ def compute_loss(y, tx, w, error):
     elif error == 'class': return cal_classerror(y,y_pred)
     elif error == 'classification':return cal_classificationerror(y,y_pred)
     else: raise NotImplemented # AMS
+        
+def compute_logistic_loss(y, tx, w):
+    """compute the cost by negative log likelihood."""
+    pred = sigmoid(tx.dot(w)) 
+    loss = y.T.dot(np.log(pred)) + (1 - y).T.dot(np.log(1 - pred))
+    return np.squeeze(- loss)
 
 def cal_error(y, y_pred):
     """ Returns vector of 0,2 or -2, the difference between vector of labels and vector of predicted labels"""
@@ -238,18 +244,11 @@ def sigmoid(t):
     """apply sigmoid function on t."""
     return 1.0 / (1 + np.exp(-t))
 
-def compute_logistic_loss(y, tx, w):
-    """compute the cost by negative log likelihood."""
-    pred = sigmoid(tx.dot(w)) 
-    loss = y.T.dot(np.log(pred)) + (1 - y).T.dot(np.log(1 - pred))
-    return np.squeeze(- loss)
-
 def compute_logistic_gradient(y, tx, w):
     """compute the gradient of loss."""
     pred = sigmoid(tx.dot(w))
     grad = tx.T.dot(pred - y)
     return grad
-
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """Logistic regression with Gradient descent algorithm."""
@@ -264,7 +263,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         
         print("Logistic regression: loss={}".format(loss))
     print("Logistic regression: w={}".format(w))
-    return w, loss
+    return w
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Regularized logistic regression with Gradient descent algorithm."""
@@ -279,7 +278,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
       bi=n_iter, ti=max_iters - 1, l=loss))
         
     print("Regularized logistic regression: w={}".format(w))   
-    return w, loss
+    return w
 
 # Cross val
 
@@ -292,7 +291,7 @@ def build_k_indices(y, k_fold, seed):
     k_indices = [indices[k * interval: (k + 1) * interval] for k in range(k_fold)]
     return np.array(k_indices)
 
-def cross_validation(y, x, degree, k, k_indices,method, error, lambda_):
+def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     """return the loss of ridge regression."""
     # get k'th subgroup in test, others in train
     te_indice = k_indices[k]
@@ -311,17 +310,25 @@ def cross_validation(y, x, degree, k, k_indices,method, error, lambda_):
     tx_tr = standardize(tx_tr)
     tx_te = standardize(tx_te)
     
-    # ridge regression
-    if method == 'rr': w = ridge_regression(y_tr, tx_tr, lambda_)
+    if method == 'rr': w = ridge_regression(y_tr, tx_tr, hyperparams[0]) # ridge regression
+    elif method == 'les': w = least_squares(y_tr, tx_tr) # least square
+    elif method == 'lsGD': w = least_squares_GD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # gradient descent
+    elif method == 'lsSGD': w = least_squares_SGD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # stoch GD
+    elif method == 'log': w = logistic_regression(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # logistic reg
+    elif method == 'rlog': w =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], hyperparams[0], hyperparams[1], hyperparams[2]) # regularised logistic reg
     else: raise NotImplemented
-  
-    # calculate the loss for train and test data
-    loss_tr = compute_loss(y_tr, tx_tr, w, error)
-    loss_te = compute_loss(y_te, tx_te, w, error)
+    
+    if method == 'log' or method == 'rlog': # A REVOIR SI CEST BON !!!!
+        loss_tr = compute_logistic_loss(y_tr, tx_tr, w)
+        loss_te = compute_logistic_loss(y_te, tx_te, w)
+    else :
+        # calculate the loss for train and test data
+        loss_tr = compute_loss(y_tr, tx_tr, w, error)
+        loss_te = compute_loss(y_te, tx_te, w, error)      
     
     return loss_tr, loss_te, w
 
-def cross_validation_demo(y, x, degree, seed, lambdas, k_fold = 4, class_distribution = False, error ='class', method='rr'):
+def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr',hyperparams=[]):
     
     if class_distribution == True : y, x = equal_class(y,x)
     k_indices = build_k_indices(y, k_fold, seed)
@@ -333,21 +340,46 @@ def cross_validation_demo(y, x, degree, seed, lambdas, k_fold = 4, class_distrib
           
     # cross validation
     if method == 'rr':
-        for lambda_ in lambdas:
-            loss_tr_tmp, loss_te_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,lambda_)
+        for lambda_ in hyperparams[0]:
+            loss_tr_tmp, loss_te_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[lambda_])
             loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
             loss_te.append(concate_fold(loss_te_tmp))
+    elif method == 'ls':
+        loss_tr_tmp, loss_te_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error)
+        loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+        loss_te.append(concate_fold(loss_te_tmp))
+    elif method =='lsGD':
+        for gamma in hyperparams[2]:
+            loss_tr_tmp, loss_te_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma])
+            loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+            loss_te.append(concate_fold(loss_te_tmp))
+    elif method =='lsSGD':
+        for gamma in hyperparams[2]:
+            loss_tr_tmp, loss_te_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma])
+            loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+            loss_te.append(concate_fold(loss_te_tmp))
+    elif method == 'log':
+        for gamma in hyperparams[2]:
+            loss_tr_tmp, loss_te_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma])
+            loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+            loss_te.append(concate_fold(loss_te_tmp))
+    elif method == 'rlog':
+        for lambda_ in hyperparams[3]:
+            for gamma in hyperparams[2]:
+                loss_tr_tmp, loss_te_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma,lambda_])
+            loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+            loss_te.append(concate_fold(loss_te_tmp))                
+    else raise NotImplemented  
           
-        cross_validation_visualization(lambdas, loss_tr, loss_te)
+    #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER 
+
           
-    else: raise NotImplemented
-          
-def single_cross_val(y, x, degree, k_fold, k_indices, method, error,lambda_):
+def single_cross_val(y, x, degree, k_fold, k_indices, method, error, hyperparams = []):
     loss_tr_tmp = []
     loss_te_tmp = []
     
     for k in range(k_fold):
-        loss_tr, loss_te,_ = cross_validation(y, x, degree, k, k_indices, method, error,lambda_)
+        loss_tr, loss_te,_ = cross_validation(y, x, degree, k, k_indices, method, error, hyperparams)
         loss_tr_tmp.append(loss_tr)
         loss_te_tmp.append(loss_te)
     return loss_tr_tmp, loss_te_tmp

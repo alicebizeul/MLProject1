@@ -10,6 +10,83 @@ import numpy as np
 from proj1_helpers import *
 import matplotlib.pyplot as plt
 
+
+# Creation of feature matrix 
+
+def split_subsets(tX, y):
+    # Splitting the dataset based on the value of PRI_jet_num
+    PRI_jet_num = tX[:, 22]
+    
+    mask_ss0 = PRI_jet_num == 0
+    ss0_tX = tX[mask_ss0]
+    ss0_y = y[mask_ss0]
+    print("Subset 0 contains {} samples ".format(mask_ss0.sum()))
+    
+    mask_ss1 = PRI_jet_num == 1
+    ss1_tX = tX[mask_ss1]
+    ss1_y = y[mask_ss1]
+    print("Subset 1 contains {} samples ".format(mask_ss1.sum()))
+    
+    mask_ss2 = PRI_jet_num == 2
+    ss2_tX = tX[mask_ss2]
+    ss2_y = y[mask_ss2]
+    print("Subset 2 contains {} samples ".format(mask_ss2.sum()))
+    
+    mask_ss3 = PRI_jet_num == 3
+    ss3_tX = tX[mask_ss3]
+    ss3_y = y[mask_ss3]
+    print("Subset 3 contains {} samples ".format(mask_ss3.sum()))
+    
+    ss0_tX, ss1_tX, ss2_tX, ss3_tX = remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX)
+
+    return ss0_tX, ss0_y, ss1_tX, ss1_y, ss2_tX, ss2_y, ss3_tX, ss3_y
+
+def split_subsets_test(tX):
+    # Splitting the dataset based on the value of PRI_jet_num
+    PRI_jet_num = tX[:, 22]
+    
+    mask_ss0 = PRI_jet_num == 0
+    ss0_tX = tX[mask_ss0]
+    print("Subset 0 contains {} samples ".format(mask_ss0.sum()))
+    
+    mask_ss1 = PRI_jet_num == 1
+    ss1_tX = tX[mask_ss1]
+    print("Subset 1 contains {} samples ".format(mask_ss1.sum()))
+    
+    mask_ss2 = PRI_jet_num == 2
+    ss2_tX = tX[mask_ss2]
+    print("Subset 2 contains {} samples ".format(mask_ss2.sum()))
+    
+    mask_ss3 = PRI_jet_num == 3
+    ss3_tX = tX[mask_ss3]
+    print("Subset 3 contains {} samples ".format(mask_ss3.sum()))
+    
+    ss0_tX, ss1_tX, ss2_tX, ss3_tX = remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX)
+
+    return ss0_tX, mask_ss0, ss1_tX, mask_ss1, ss2_tX, mask_ss2, ss3_tX, mask_ss3
+
+def remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX):
+    
+    #Now, we can remove the categorical feature "PRI_jet_num" for our subsets
+    ss0_tX = np.delete(ss0_tX, 22, axis=1)
+    ss1_tX = np.delete(ss1_tX, 22, axis=1)
+    ss2_tX = np.delete(ss2_tX, 22, axis=1)
+    ss3_tX = np.delete(ss3_tX, 22, axis=1)
+    
+    # Removing undefined features for the corresponding subsets
+    features_undefined_ss01 = [4, 5, 6, 12, 25, 26, 27]
+    ss0_tX = np.delete(ss0_tX, features_undefined_ss01, axis=1)
+    ss1_tX = np.delete(ss1_tX, features_undefined_ss01, axis=1)
+         
+    features_undefined_ss0 = [18, 19, 20] # taking into account indices of the features previously removed
+    ss0_tX = np.delete(ss0_tX, features_undefined_ss0, axis=1)
+    
+    return ss0_tX, ss1_tX, ss2_tX, ss3_tX  
+
+def replace_undef_feat(tX,method = 'median'):
+    tX[tX[:,0] == -999][0] = np.median(tX[~(tX[:,0] == -999)][0])
+    return tX
+
 def build_model_data(features, label):
     """Form (y,tX) to get regression data in matrix form."""
     y = label
@@ -18,31 +95,77 @@ def build_model_data(features, label):
     tx = np.column_stack((x, np.ones(num_samples, dtype=x.dtype)))
     return y, tx
 
+def build_poly(x, degree):
+    """polynomial basis functions for input data x, for j=0 up to j=degree."""
+    tx = np.ones(x.shape[0])
+    for i in range(1,degree+1):
+        tx = np.c_[tx,x**i]
+    return tx
 
-def calculate_mse(e):
-    """Calculate the mean square error for vector e."""
-    return 1/2*np.mean(e**2)
+def standardize(tx):
+    tx = (tx - np.mean(tx, axis = 0))
+    return np.c_[tx[:,0],tx[:,1:]/ np.std(tx[:,1:],axis = 0)]
 
-def calculate_rmse(mse):
-    """Calculate the root mean square error using the mean square error as input """
-    return np.sqrt(2*mse)
+# Loss measurement 
 
-def compute_loss(y, tx, w):
+def predict_labels(weights, data):
+    """Generates class predictions given weights, and a test data matrix"""
+    y_pred = np.dot(data, weights)
+    y_pred[np.where(y_pred <= 0)] = -1
+    y_pred[np.where(y_pred > 0)] = 1
+    
+    return y_pred
+
+def compute_loss(y, tx, w, error):
     """Calculate the loss.
 
-    You can calculate the loss using mse or mae.
+    You can calculate the loss using method given in arguments.
     """
-    # TO DISCUSS
-    #e = y - tx.dot(w)
-    #return calculate_mse(e)
-    return class_error(y,predict_labels(w,tx))
+    
+    y_pred = predict_labels(w,tx)
+    
+    if error == 'mse': return cal_mse(cal_error(y,y_pred))
+    elif error == 'rmse': return cal_rmse(cal_error(y,y_pred))
+    elif error == 'class': return cal_classerror(y,y_pred)
+    elif error == 'classification':return cal_classificationerror(y,y_pred)
+    else: raise NotImplemented # AMS
+
+def cal_error(y, y_pred):
+    """ Returns vector of 0,2 or -2, the difference between vector of labels and vector of predicted labels"""
+    return y - y_pred
+    
+def cal_mse(e):
+    """Returns the mean square error for vector e."""
+    return 1/2*np.mean(e**2)
+
+def cal_rmse(mse):
+    """Returns the root mean square error using the mean square error as input """
+    return np.sqrt(2*mse)
+
+def cal_classerror(y,y_pred):
+    """Returns the class error (percentage of fails) which takes 
+    reequilibrates class distribution into acount"""
+    class1 = np.sum(y_pred[y ==1] != 1)/np.sum(y == 1)
+    class2 = np.sum(y_pred[y == -1] != -1)/np.sum(y == -1)
+    
+    return class1 + class2
+
+def cal_classificationerror(y, ypred):
+    """Returns the classification error = percentage of fails, does not 
+    take class distribution among data set into account """
+    return 1-accuracy(y,y_pred)
+    
+def accuracy(y,y_pred):
+    """ Returns accuracy of classification = percentage of success"""
+    return np.sum(y == y_pred)/len(y)
+
+# Optimisation Methods 
 
 def compute_gradient(y, tx, w):
     """Compute the gradient."""
     err = y - tx.dot(w)
     grad = -tx.T.dot(err) / len(err)
     return grad, err
-
 
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """Gradient descent algorithm."""
@@ -59,8 +182,6 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
               bi=n_iter, ti=max_iters - 1, l=loss))
     print("Gradient Descent: w={}".format(w))   
     return w, loss
-
-
 
 def compute_stoch_gradient(y, tx, w):
     """Compute a stochastic gradient from one example n and its corresponding y_n labels."""
@@ -92,35 +213,26 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
         print("SGD({bi}/{ti}): loss={l}".format(
               bi=n_iter, ti=max_iters - 1, l=loss))
     print("SGD: w={}".format(w))
-    return w, loss
-
+    return w
 
 def least_squares(y, tx):
     """calculate the least squares solution."""
     a = tx.T.dot(tx)
     b = tx.T.dot(y)
     w = np.linalg.solve(a, b)
-    loss = compute_loss(y, tx, w)
     
     print("Least squares: loss={}".format(loss))
     print("Least squares: w={}".format(w))
-    return w, loss
-
-
-
+    return w
 
 def ridge_regression(y, tx, lambda_): # = REGULARIZATION
     aI = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
     a = tx.T.dot(tx) + aI
     b = tx.T.dot(y)
     w = np.linalg.solve(a, b)
-    loss = compute_loss(y, tx, w)
     
-    print("Ridge regression: loss={}".format(loss))
     print("Ridge regression: w={}".format(w))
-    return w, loss
-
-
+    return w
 
 def sigmoid(t):
     """apply sigmoid function on t."""
@@ -154,9 +266,6 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     print("Logistic regression: w={}".format(w))
     return w, loss
 
-
-
-
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Regularized logistic regression with Gradient descent algorithm."""
     
@@ -172,70 +281,97 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     print("Regularized logistic regression: w={}".format(w))   
     return w, loss
 
-def accuracy(y,y_pred):
-    return np.sum(y == y_pred)/len(y)
+# Cross val
 
-def classification_error(y, ypred):
-    return 1-accuracy(y,y_pred)
+def build_k_indices(y, k_fold, seed):
+    """build k indices for k-fold."""
+    num_row = y.shape[0]
+    interval = int(num_row / k_fold)
+    np.random.seed(seed)
+    indices = np.random.permutation(num_row)
+    k_indices = [indices[k * interval: (k + 1) * interval] for k in range(k_fold)]
+    return np.array(k_indices)
 
-def class_error(y,ypred):
+def cross_validation(y, x, degree, k, k_indices,method, error, lambda_):
+    """return the loss of ridge regression."""
+    # get k'th subgroup in test, others in train
+    te_indice = k_indices[k]
+    tr_indice = k_indices[~(np.arange(k_indices.shape[0]) == k)]
+    tr_indice = tr_indice.reshape(-1)
     
-    class1 = np.sum(ypred[y ==1] != 1)/np.sum(y == 1)
-    class2 = np.sum(ypred[y == -1] != -1)/np.sum(y == -1)
+    y_te = y[te_indice]
+    y_tr = y[tr_indice]
+    x_te = x[te_indice]
+    x_tr = x[tr_indice]
     
-    return class1 + class2
+    # form data with polynomial degree
+    tx_tr = build_poly(x_tr, degree)
+    tx_te = build_poly(x_te, degree)
+        
+    tx_tr = standardize(tx_tr)
+    tx_te = standardize(tx_te)
+    
+    # ridge regression
+    if method == 'rr': w = ridge_regression(y_tr, tx_tr, lambda_)
+    else: raise NotImplemented
+  
+    # calculate the loss for train and test data
+    loss_tr = compute_loss(y_tr, tx_tr, w, error)
+    loss_te = compute_loss(y_te, tx_te, w, error)
+    
+    return loss_tr, loss_te, w
 
-def standardize(tx):
-    return (tx - np.mean(tx, axis = 0))/ np.std(tx,axis = 0)
+def cross_validation_demo(y, x, degree, seed, lambdas, k_fold = 4, class_distribution = False, error ='class', method='rr'):
+    
+    if class_distribution == True : y, x = equal_class(y,x)
+    k_indices = build_k_indices(y, k_fold, seed)
+           
+    verify_proportion(y,k_indices)
 
-def build_poly(x, degree):
-    """polynomial basis functions for input data x, for j=0 up to j=degree."""
-    tx = np.ones(x.shape[0])
-    for i in range(1,degree+1):
-        tx = np.c_[tx,x**i]
-    return tx
+    loss_tr = []
+    loss_te = []
+          
+    # cross validation
+    if method == 'rr':
+        for lambda_ in lambdas:
+            loss_tr_tmp, loss_te_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,lambda_)
+            loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+            loss_te.append(concate_fold(loss_te_tmp))
+          
+        cross_validation_visualization(lambdas, loss_tr, loss_te)
+          
+    else: raise NotImplemented
+          
+def single_cross_val(y, x, degree, k_fold, k_indices, method, error,lambda_):
+    loss_tr_tmp = []
+    loss_te_tmp = []
+    
+    for k in range(k_fold):
+        loss_tr, loss_te,_ = cross_validation(y, x, degree, k, k_indices, method, error,lambda_)
+        loss_tr_tmp.append(loss_tr)
+        loss_te_tmp.append(loss_te)
+    return loss_tr_tmp, loss_te_tmp
 
+def equal_class(y,x):
+    y_class0 = y[y==-1]
+    y_class1 = y[y==1]
+        
+    x_class0 = x[y==-1][:]
+    x_class1 = x[y==1][:]
+        
+    to_keep = np.random.permutation(len(y_class0))[:(len(y_class1)-1)]
+    return  np.concatenate((y_class0[to_keep],y_class1),axis = 0), np.concatenate((x_class0[to_keep][:],x_class1),axis = 0)
+          
+def concate_fold(array_loss):
+      return np.mean(array_loss)
+    
+def verify_proportion(y,k_indices):
+    print('Number of remaining samples before start cross val : {} %'.format(len(y)))
+    print("Proportion of Bosons in all train set : {} %".format(100*len(y[y==1])/len(y)))
+    print("Proportion of Bosons in test fold 1: {} %".format(100*len(y[k_indices[0]][y[k_indices[0]]==1])/len(y[k_indices[0]])))
+    
 
-def split_subsets(tX, y):
-    # Splitting the dataset based on the value of PRI_jet_num
-    PRI_jet_num = tX[:, 22]
-    
-    mask_ss0 = PRI_jet_num == 0
-    ss0_tX = tX[mask_ss0]
-    ss0_y = y[mask_ss0]
-    print("Subset 0 contains {} samples ".format(mask_ss0.sum()))
-    
-    mask_ss1 = PRI_jet_num == 1
-    ss1_tX = tX[mask_ss1]
-    ss1_y = y[mask_ss1]
-    print("Subset 1 contains {} samples ".format(mask_ss1.sum()))
-    
-    mask_ss2 = PRI_jet_num == 2
-    ss2_tX = tX[mask_ss2]
-    ss2_y = y[mask_ss2]
-    print("Subset 2 contains {} samples ".format(mask_ss2.sum()))
-    
-    mask_ss3 = PRI_jet_num == 3
-    ss3_tX = tX[mask_ss3]
-    ss3_y = y[mask_ss3]
-    print("Subset 3 contains {} samples ".format(mask_ss3.sum()))
-    
-    #Now, we can remove the categorical feature "PRI_jet_num" for our subsets
-    ss0_tX = np.delete(ss0_tX, 22, axis=1)
-    ss1_tX = np.delete(ss1_tX, 22, axis=1)
-    ss2_tX = np.delete(ss2_tX, 22, axis=1)
-    ss3_tX = np.delete(ss3_tX, 22, axis=1)
-    
-    # Removing undefined features for the corresponding subsets
-    features_undefined_ss01 = [4, 5, 6, 12, 25, 26, 27]
-    ss0_tX = np.delete(ss0_tX, features_undefined_ss01, axis=1)
-    ss1_tX = np.delete(ss1_tX, features_undefined_ss01, axis=1)
-         
-    features_undefined_ss0 = [18, 19, 20] # taking into account indices of the features previously removed
-    ss0_tX = np.delete(ss0_tX, features_undefined_ss0, axis=1)
-
-    return ss0_tX, ss0_y, ss1_tX, ss1_y, ss2_tX, ss2_y, ss3_tX, ss3_y
-
+# Visualisation methods 
 
 def histo_visualization(feature_1,feature_2):
     fig = plt.figure()
@@ -268,4 +404,16 @@ def scatter_visualization(label, feature_1,feature_2,index):
     ax2.grid()
 
     return fig
+          
+
+def cross_validation_visualization(lambds, loss_tr, loss_te):
+    """visualization the curves of mse_tr and mse_te."""
+    plt.semilogx(lambds, loss_tr, marker=".", color='b', label='train error')
+    plt.semilogx(lambds, loss_te, marker=".", color='r', label='test error')
+    plt.xlabel("lambda")
+    plt.ylabel("rmse")
+    plt.title("cross validation")
+    plt.legend(loc=2)
+    plt.grid(True)
+    plt.savefig("cross_validation")
 

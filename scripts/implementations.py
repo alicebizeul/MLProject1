@@ -405,18 +405,23 @@ def verify_proportion(y,k_indices):
 
 # Visualisation methods 
 
-def histo_visualization(feature_1,feature_2):
-    fig = plt.figure()
-   
-    # plot 1
-    ax1 = fig.add_subplot(1, 2, 1)
-    ax1 = plt.hist(feature_1,bins=100)
-
-    # plot 2
-    ax2 = fig.add_subplot(1, 2, 2)
-    ax2 = plt.hist(feature_2,bins=100)
+def histo_visualization(feature_0,feature_1,index,std_number):
+    fig, axes = plt.subplots(1, 2, figsize=(16, 4))
     
-    return fig
+    title_0 = 'Distribution of the features N°' + str(index+1)
+    axes[0].set_title(title_0)
+    axes[0].hist(feature_0,bins=100)
+    axes[0].axvline(np.mean(feature_0), color='k', linewidth=1)
+    axes[0].axvline( (std_number*np.std(feature_0)) + np.mean(feature_0), color='r', linestyle='dashed', linewidth=1)
+    axes[0].axvline( (-std_number*np.std(feature_0)) + np.mean(feature_0), color='r', linestyle='dashed', linewidth=1)
+    
+    title_1 = 'Distribution of the features N°' + str(index+2)
+    axes[1].set_title(title_1)
+    axes[1].hist(feature_1,bins=100)
+    axes[1].axvline(np.mean(feature_1), color='k', linewidth=1)
+    axes[1].axvline( (std_number*np.std(feature_1)) + np.mean(feature_1), color='r', linestyle='dashed', linewidth=1)
+    axes[1].axvline( (-std_number*np.std(feature_1)) + np.mean(feature_1), color='r', linestyle='dashed', linewidth=1)
+    plt.show()
 
 def scatter_visualization(label, feature_1,feature_2,index):
     fig = plt.figure()

@@ -156,7 +156,7 @@ def cal_classerror(y,y_pred):
     
     return class1 + class2
 
-def cal_classificationerror(y, ypred):
+def cal_classificationerror(y, y_pred):
     """Returns the classification error = percentage of fails, does not 
     take class distribution among data set into account """
     return 1-accuracy(y,y_pred)
@@ -311,7 +311,7 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     tx_te = standardize(tx_te)
     
     if method == 'rr': w = ridge_regression(y_tr, tx_tr, hyperparams[0]) # ridge regression
-    elif method == 'les': w = least_squares(y_tr, tx_tr) # least square
+    elif method == 'ls': w = least_squares(y_tr, tx_tr) # least square
     elif method == 'lsGD': w = least_squares_GD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # gradient descent
     elif method == 'lsSGD': w = least_squares_SGD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # stoch GD
     elif method == 'log': w = logistic_regression(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # logistic reg
@@ -369,7 +369,7 @@ def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = F
                 loss_tr_tmp, loss_te_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma,lambda_])
             loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
             loss_te.append(concate_fold(loss_te_tmp))                
-    else raise NotImplemented  
+    else: raise NotImplemented  
           
     #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER 
 

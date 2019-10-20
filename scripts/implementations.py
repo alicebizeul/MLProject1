@@ -454,3 +454,27 @@ def cross_validation_visualization(lambds, loss_tr, loss_te):
     plt.grid(True)
     plt.savefig("cross_validation")
 
+
+def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png"):
+    
+    full_data = np.c_[tX, y]
+    corr_matrix = np.corrcoef(full_data.T) 
+
+    figure = plt.figure(figsize=(20,20))
+    ax = figure.add_subplot(111)
+    cax = ax.matshow(corr_matrix, cmap=plt.cm.PuOr)
+    figure.colorbar(cax)
+    plt.xticks(range(len(labels)), labels, rotation=90)
+    plt.yticks(range(len(labels)), labels)
+    plt.tight_layout()
+    plt.show()
+    figure.savefig(figureName, bbox_inches='tight')
+    
+    
+    output_corr = corr_matrix[:,-1]
+    output_corr = np.abs(output_corr[:-1])
+    ranked_index = output_corr.argsort()
+    ranked_features = [labels[i] for i in ranked_index]
+    print("Ranked absolute correlation with output: ", np.sort(output_corr))
+    print("Ranked features: ", ranked_features)
+    return ranked_index, ranked_features

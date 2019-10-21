@@ -78,13 +78,15 @@ def remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX):
     ss0_tX = np.delete(ss0_tX, features_undefined_ss01, axis=1)
     ss1_tX = np.delete(ss1_tX, features_undefined_ss01, axis=1)
          
-    features_undefined_ss0 = [18, 19, 20] # taking into account indices of the features previously removed
+    features_undefined_ss0 = [18, 19, 20, 21] # taking into account indices of the features previously removed
     ss0_tX = np.delete(ss0_tX, features_undefined_ss0, axis=1)
     
     return ss0_tX, ss1_tX, ss2_tX, ss3_tX  
 
-def replace_undef_feat(tX,method = 'median'):
-    tX[tX[:,0] == -999][0] = np.median(tX[~(tX[:,0] == -999)][0])
+def replace_undef_feat(tX,method):
+    if method == 'median' : tX[tX[:,0] == -999][0] = np.median(tX[~(tX[:,0] == -999)][0])
+    elif method == 'mean' : tX[tX[:,0] == -999][0] = np.mean(tX[~(tX[:,0] == -999)][0])
+    elif method == 'delete' : tX = np.delete(tX, tX[tX[:,0] == -999], 0) 
     return tX
 
 def build_model_data(features, label):
@@ -478,3 +480,24 @@ def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png"):
     print("Ranked absolute correlation with output: ", np.sort(output_corr))
     print("Ranked features: ", ranked_features)
     return ranked_index, ranked_features
+
+
+def outliers_suppresion(subsample, std_number):
+
+    deviation_feature = np.std(subsample,axis = 0)
+    mean_feature = np.mean(subsample,axis = 0)
+    index = []
+
+    for i in range(np.size(subsample,1)):
+        dev_idx = deviation_feature[i]
+        mean_idx = mean_feature[i]
+        threshold = (std_number*dev_idx) + mean_idx
+        for j in range(np.size(subsample,0)):
+            if abs(subsample[j,i]) > threshold:
+                index.append(j)
+
+    subsample_outliers = np.delete(subsample, index, 0)
+    print("size of the dataset with {in_} and without {out} the outliers".format(in_=subsample.shape, out=subsample_outliers.shape))
+    print("Number of sample suppressed ouside {std} std: {supp}".format(std=std_number, supp=(subsample.shape[0] - subsample_outliers.shape[0])))
+
+    return subsample_outliers

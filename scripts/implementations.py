@@ -84,10 +84,10 @@ def remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat):
     labels_feat = np.delete(labels_feat,[4,5,6,12,25,26,27])
     print('Remaining features for subset 1: {}'.format(labels_feat))
          
-    features_undefined_ss0 = [18, 19, 20] # taking into account indices of the features previously removed
+    features_undefined_ss0 = [18, 19, 20, 21] # taking into account indices of the features previously removed
     ss0_tX = np.delete(ss0_tX, features_undefined_ss0, axis=1)
     
-    print('Remaining features for subset 0: {}'.format(np.delete(labels_feat,[18,19,20])))
+    print('Remaining features for subset 0: {}'.format(np.delete(labels_feat,[18,19,20, 21])))
     
     return ss0_tX, ss1_tX, ss2_tX, ss3_tX 
 
@@ -133,7 +133,7 @@ def build_poly(x, degree):
     return tx
 
 def standardize(tx):
-    return np.c_[tx[:,0]/tx.shape[0],(tx[:,1:]- np.mean(tx[:,1:], axis = 0))/ np.std(tx[:,1:],axis = 0)]
+    return np.c_[tx[:,0],(tx[:,1:]- np.mean(tx[:,1:], axis = 0))/ np.std(tx[:,1:],axis = 0)]
 
 def batch_iter(y, tx, batch_size, num_batches=1):
     """
@@ -346,6 +346,37 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     
     print('Mean and std of each feature in train set: {} , {}'.format(tx_tr.mean(axis = 0),tx_tr.std(axis = 0)))
     print('Mean and std of each feature in test set: {} , {}'.format(tx_te.mean(axis = 0),tx_te.std(axis = 0)))
+    
+    if method == 'rr': w = ridge_regression(y_tr, tx_tr, hyperparams[0]) # ridge regression
+    elif method == 'ls': w = least_squares(y_tr, tx_tr) # least square
+    elif method == 'lsGD': w = least_squares_GD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # gradient descent
+    elif method == 'lsSGD': w = least_squares_SGD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # stoch GD
+    elif method == 'log': w = logistic_regression(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # logistic reg
+    elif method == 'rlog': w =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], hyperparams[0], hyperparams[1], hyperparams[2]) # regularised logistic reg
+    else: raise NotImplemented
+    
+    if method == 'log' or method == 'rlog': # A REVOIR SI CEST BON !!!!
+        loss_tr = compute_logistic_loss(y_tr, tx_tr, w)
+        loss_te = compute_logistic_loss(y_te, tx_te, w)
+    else :
+        # calculate the loss for train and test data
+        loss_tr = compute_loss(y_tr, tx_tr, w, error)
+        loss_te = compute_loss(y_te, tx_te, w, error)      
+    
+    return loss_tr, loss_te, w
+     
+    
+def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr',hyperparams=[]):
+    
+    if class_distribution == True : y, x = equal_class(y,x)
+    k_indices = build_k_indices(y, k_fold, seed)
+           
+    verify_proportion(y,k_indices)
+
+    loss_tr = []
+    loss_te = []
+    
+    w = []
     
     # cross validation
     if method == 'rr':

@@ -136,7 +136,7 @@ def build_poly(x, degree):
     return tx
 
 def standardize(tx , mean = [], std = []):
-    if not mean and not std :
+    if mean == [] and std == []:
         mean = np.mean(tx[:,1:], axis = 0)
         std = np.std(tx[:,1:],axis = 0)
     return np.c_[tx[:,0],(tx[:,1:]- mean)/std], mean, std
@@ -271,7 +271,6 @@ def least_squares(y, tx):
     b = tx.T.dot(y)
     w = np.linalg.solve(a, b)
     
-    print("Least squares: loss={}".format(loss))
     print("Least squares: w={}".format(w))
     return w
 

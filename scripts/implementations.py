@@ -37,9 +37,9 @@ def split_subsets(tX, y, labels_feat):
     ss3_y = y[mask_ss3]
     print("Subset 3 contains {} samples ".format(mask_ss3.sum()))
     
-    ss0_tX, ss1_tX, ss2_tX, ss3_tX = remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX,labels_feat)
+    ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat = remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX,labels_feat)
 
-    return ss0_tX, ss0_y, ss1_tX, ss1_y, ss2_tX, ss2_y, ss3_tX, ss3_y
+    return ss0_tX, ss0_y, ss1_tX, ss1_y, ss2_tX, ss2_y, ss3_tX, ss3_y, labels_feat
 
 def split_subsets_test(tX):
     # Splitting the dataset based on the value of PRI_jet_num
@@ -73,23 +73,26 @@ def remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat):
     ss2_tX = np.delete(ss2_tX, 22, axis=1)
     ss3_tX = np.delete(ss3_tX, 22, axis=1)
     
-    labels_feat = np.delete(labels_feat,22)
-    print('Remaining features for subset 2, 3: {}'.format(labels_feat))
+    labels_feat2 = np.delete(labels_feat,22)
+    print('Remaining features for subset 2, 3: {}'.format(labels_feat2))
     
     # Removing undefined features for the corresponding subsets
     features_undefined_ss01 = [4, 5, 6, 12, 25, 26, 27]
     ss0_tX = np.delete(ss0_tX, features_undefined_ss01, axis=1)
     ss1_tX = np.delete(ss1_tX, features_undefined_ss01, axis=1)
     
-    labels_feat = np.delete(labels_feat,[4,5,6,12,25,26,27])
-    print('Remaining features for subset 1: {}'.format(labels_feat))
+    labels_feat1 = np.delete(labels_feat2,[4,5,6,12,25,26,27])
+    print('Remaining features for subset 1: {}'.format(labels_feat1))
          
     features_undefined_ss0 = [18, 19, 20, 21] # taking into account indices of the features previously removed
     ss0_tX = np.delete(ss0_tX, features_undefined_ss0, axis=1)
     
-    print('Remaining features for subset 0: {}'.format(np.delete(labels_feat,[18,19,20, 21])))
+    labels_feat0 = np.delete(labels_feat1,[18,19,20, 21])
+    print('Remaining features for subset 0: {}'.format(np.delete(labels_feat1,[18,19,20, 21])))
     
-    return ss0_tX, ss1_tX, ss2_tX, ss3_tX 
+    labels_feat = [labels_feat0, labels_feat1, labels_feat2, labels_feat2]
+    
+    return ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat
 
 def replace_undef_feat(tX,method):
     if method == 'median' : tX[tX[:,0] == -999][0] = np.median(tX[~(tX[:,0] == -999)][0])
@@ -132,8 +135,11 @@ def build_poly(x, degree):
         tx = np.c_[tx,x**i]
     return tx
 
-def standardize(tx):
-    return np.c_[tx[:,0],(tx[:,1:]- np.mean(tx[:,1:], axis = 0))/ np.std(tx[:,1:],axis = 0)]
+def standardize(tx , mean = [], std = []):
+    if not mean and not std :
+        mean = np.mean(tx[:,1:], axis = 0)
+        std = np.std(tx[:,1:],axis = 0)
+    return np.c_[tx[:,0],(tx[:,1:]- mean)/std], mean, std
 
 def batch_iter(y, tx, batch_size, num_batches=1):
     """
@@ -341,8 +347,8 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     tx_tr = build_poly(x_tr, degree)
     tx_te = build_poly(x_te, degree)
         
-    tx_tr = standardize(tx_tr)
-    tx_te = standardize(tx_te)
+    tx_tr, mean, std = standardize(tx_tr)
+    tx_te, _, _ = standardize(tx_te, mean, std)
     
     print('Mean and std of each feature in train set: {} , {}'.format(tx_tr.mean(axis = 0),tx_tr.std(axis = 0)))
     print('Mean and std of each feature in test set: {} , {}'.format(tx_te.mean(axis = 0),tx_te.std(axis = 0)))

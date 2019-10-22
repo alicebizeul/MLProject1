@@ -179,7 +179,7 @@ def compute_loss(y, tx, w, error):
     y_pred = predict_labels(w,tx)
     
     if error == 'mse': return cal_mse(cal_error(y,y_pred))
-    elif error == 'rmse': return cal_rmse(cal_mse(cal_error(y,y_pred)))
+    elif error == 'rmse': return cal_rmse(cal_error(y,y_pred))
     elif error == 'class': return cal_classerror(y,y_pred)
     elif error == 'classification':return cal_classificationerror(y,y_pred)
     elif error == 'logl':return cal_loglike(y, tx, w)
@@ -192,13 +192,11 @@ def cal_error(y, y_pred):
     
 def cal_mse(e):
     """Returns the mean square error for vector e."""
-    print('hello',e**2)
     return 1/2*np.mean(e**2)
 
-def cal_rmse(mse):
+def cal_rmse(e):
     """Returns the root mean square error using the mean square error as input """
-    print('hello',mse)
-    return np.sqrt(2*mse)
+    return np.sqrt(2*cal_mse(e))
 
 def cal_classerror(y,y_pred):
     """Returns the class error (percentage of fails) which takes 

@@ -529,3 +529,27 @@ def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png"):
     print("Ranked absolute correlation with output: ", np.sort(output_corr))
     print("Ranked features: ", ranked_features)
     return ranked_index, ranked_features
+
+def result_crossval(loss_tr,loss_te):
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    axes[0].boxplot(loss_tr)
+    axes[0].set_title('Train : Errors across folds across hyperparam values')
+    axes[0].set_ylabel('Error')
+    axes[1].boxplot(loss_te)
+    axes[1].set_title('Test : Errors across folds across hyperparam values')
+    axes[1].set_ylabel('Error')
+    plt.show()
+
+def bias_variance_decomposition_visualization(degrees, rmse_tr, rmse_te):
+    """visualize the bias variance decomposition."""
+    rmse_tr_mean = np.expand_dims(np.mean(rmse_tr, axis=0), axis=0)
+    rmse_te_mean = np.expand_dims(np.mean(rmse_te, axis=0), axis=0)
+    plt.plot(degrees,rmse_tr.T,'b',linestyle="-",color=([0.7, 0.7, 1]),label='train',linewidth=0.3)
+    plt.plot(degrees,rmse_te.T,'r',linestyle="-",color=[1, 0.7, 0.7],label='test',linewidth=0.3)
+    plt.plot(degrees,rmse_tr_mean.T,'b',linestyle="-",label='train',linewidth=3)
+    plt.plot(degrees,rmse_te_mean.T,'r',linestyle="-",label='test',linewidth=3)
+    plt.ylim(0.2, 0.7)
+    plt.xlabel("degree")
+    plt.ylabel("error")
+    plt.title("Bias-Variance Decomposition")
+    plt.savefig("bias_variance")

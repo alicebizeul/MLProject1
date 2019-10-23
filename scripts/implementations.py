@@ -512,29 +512,65 @@ def cross_validation_visualization(lambds, loss_tr, loss_te):
     plt.savefig("cross_validation")
 
 
-def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png"):
+def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png", threshold=0.85):
+    """Computes and plots a heatmap of the correlation matrix. This matrix comprises the Pearson correlation
+    coefficients between (continuous) features and the Point-biserial coefficients between each feature and 
+    the (categorical) output."""
     
-    full_data = np.c_[tX, y]
-    corr_matrix = np.corrcoef(full_data.T) 
-
+    correlation_output = [cal_point_biserial_correlation(tX[:,i], y) for i in range(tX.shape[1])]
+    correlation_features = np.corrcoef(tX.T) 
+    corr_matrix = np.c_[correlation_features, correlation_output]
+    
+    # Plot
     figure = plt.figure(figsize=(20,20))
     ax = figure.add_subplot(111)
     cax = ax.matshow(corr_matrix, cmap=plt.cm.PuOr)
     figure.colorbar(cax)
     plt.xticks(range(len(labels)), labels, rotation=90)
-    plt.yticks(range(len(labels)), labels)
+    plt.yticks(range(len(labels)-1), labels[:-1])
     plt.tight_layout()
     plt.show()
     figure.savefig(figureName, bbox_inches='tight')
     
-    
-    output_corr = corr_matrix[:,-1]
-    output_corr = np.abs(output_corr[:-1])
-    ranked_index = output_corr.argsort()
+    # Rank feature importance based on correlation with output
+    correlation_output = np.abs(correlation_output)
+    ranked_index = correlation_output.argsort()
     ranked_features = [labels[i] for i in ranked_index]
-    print("Ranked absolute correlation with output: ", np.sort(output_corr))
+    print("Ranked absolute correlation with output: ", np.sort(correlation_output))
     print("Ranked features: ", ranked_features)
+
+    #Print pairs of features highly correlated (above threshold)
+    index = np.argwhere(correlation_features > threshold)
+    final_index = []
+    for i in range(index.shape[0]):
+        if index[i, 0] != index[i, 1]:
+            final_index.append(index[i,:])
+     
+    final_index = np.sort(final_index, axis=1) 
+    final_index = np.unique(final_index, axis=0)
+    
+    print("\n Highly correlated features (correlation above {}) : {} ".format(threshold,labels[final_index]))
+    
     return ranked_index, ranked_features
+
+def cal_point_biserial_correlation(x, y):
+    """ Computes the point-biserial correlation coefficient between a continuous variable x
+    and a dichotomous variable y.
+    Here, y takes values in {-1, 1}."""
+    
+    group_b = x[y == -1]
+    n_b = len(group_b)
+    group_s = x[y == 1]
+    n_s = len(group_s)
+    
+    n_x = len(x)
+    
+    mean_b = np.mean(group_b)
+    mean_s = np.mean(group_s)
+    
+    coef = ((mean_s-mean_b)/np.std(x))*np.sqrt(n_b*n_s/(n_x*n_x))
+    
+    return coef
 
 def result_crossval(loss_tr,loss_te):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))

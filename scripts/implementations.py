@@ -245,7 +245,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     print("Gradient Descent (gamma = {gamma} ,{ti}): w ={weights}".format(gamma = gamma, ti=max_iters - 1,weights =w))     
     return w
 
-def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
+def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
     """Stochastic gradient descent."""
     # Define parameters to store w and loss
 
@@ -253,11 +253,12 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     data_size = y.shape[0]
 
     for n_iter in range(max_iters):
-        for y_batch, tx_batch in batch_iter(y, tx, batch_size=batchsize, num_batches=1):
-            # compute a stochastic gradient and loss
-            grad, _ = compute_gradient(y_batch, tx_batch, w)
-            # update w through the stochastic gradient update
-            w = w - gamma * grad
+        for batch in range(batchsize):
+            for y_batch, tx_batch in batch_iter(y, tx, batch_size=batch, num_batches=1):
+                # compute a stochastic gradient and loss
+                grad, _ = compute_gradient(y_batch, tx_batch, w)
+                # update w through the stochastic gradient update
+                w = w - gamma * grad
 
         #print("SGD({bi}/{ti}): loss={l}".format(
         #      bi=n_iter, ti=max_iters - 1, l=loss))
@@ -349,13 +350,13 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     tx_tr, mean, std = standardize(tx_tr)
     tx_te, _, _ = standardize(tx_te, mean, std)
     
-    print('Mean and std of each feature in train set: {} , {}'.format(tx_tr.mean(axis = 0),tx_tr.std(axis = 0)))
-    print('Mean and std of each feature in test set: {} , {}'.format(tx_te.mean(axis = 0),tx_te.std(axis = 0)))
+    #print('Mean and std of each feature in train set: {} , {}'.format(tx_tr.mean(axis = 0),tx_tr.std(axis = 0)))
+    #print('Mean and std of each feature in test set: {} , {}'.format(tx_te.mean(axis = 0),tx_te.std(axis = 0)))
     
     if method == 'rr': w = ridge_regression(y_tr, tx_tr, hyperparams[0]) # ridge regression
     elif method == 'ls': w = least_squares(y_tr, tx_tr) # least square
     elif method == 'lsGD': w = least_squares_GD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # gradient descent
-    elif method == 'lsSGD': w = least_squares_SGD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # stoch GD
+    elif method == 'lsSGD': w = least_squares_SGD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2], hyperparams[3]) # stoch GD
     elif method == 'log': w = logistic_regression(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # logistic reg
     elif method == 'rlog': w =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], hyperparams[0], hyperparams[1], hyperparams[2]) # regularised logistic reg
     else: raise NotImplemented
@@ -545,14 +546,18 @@ def result_crossval(loss_tr,loss_te):
     axes[1].set_ylabel('Error')
     plt.show()
 
-def bias_variance_decomposition_visualization(degrees, rmse_tr, rmse_te):
+def bias_variance_decomposition_visualization(degrees, loss_tr, loss_te):
     """visualize the bias variance decomposition."""
-    rmse_tr_mean = np.expand_dims(np.mean(rmse_tr, axis=0), axis=0)
-    rmse_te_mean = np.expand_dims(np.mean(rmse_te, axis=0), axis=0)
-    plt.plot(degrees,rmse_tr.T,'b',linestyle="-",color=([0.7, 0.7, 1]),label='train',linewidth=0.3)
-    plt.plot(degrees,rmse_te.T,'r',linestyle="-",color=[1, 0.7, 0.7],label='test',linewidth=0.3)
-    plt.plot(degrees,rmse_tr_mean.T,'b',linestyle="-",label='train',linewidth=3)
-    plt.plot(degrees,rmse_te_mean.T,'r',linestyle="-",label='test',linewidth=3)
+    
+    loss_tr = np.array(loss_tr)
+    loss_te = np.array(loss_te)
+    
+    tr_mean = np.expand_dims(np.mean(loss_tr, axis=0), axis=0)
+    te_mean = np.expand_dims(np.mean(loss_te, axis=0), axis=0)
+    plt.plot(degrees,loss_tr.T,'b',linestyle="-",color=([0.7, 0.7, 1]),label='train',linewidth=0.3)
+    plt.plot(degrees,loss_te.T,'r',linestyle="-",color=[1, 0.7, 0.7],label='test',linewidth=0.3)
+    plt.plot(degrees,tr_mean.T,'b',linestyle="-",label='train',linewidth=3)
+    plt.plot(degrees,te_mean.T,'r',linestyle="-",label='test',linewidth=3)
     plt.ylim(0.2, 0.7)
     plt.xlabel("degree")
     plt.ylabel("error")

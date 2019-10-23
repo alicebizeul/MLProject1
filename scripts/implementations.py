@@ -94,11 +94,50 @@ def remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat):
     
     return ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat
 
+def remove_correlated_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat):
+    
+    # Subset 0 - keep DER_pt_tot
+    print("Deleted features for subset 0 : {}".format(labels_feat[0][3]))
+    ss0_tX = np.delete(ss0_tX, 3, axis=1)
+    labels_feat[0] = np.delete(labels_feat[0],3)
+
+    
+    # Subset 1 - keep DER_sum_pt
+    correlated_features_ss1 = [3, 18, 21]
+    print("Deleted features for subset 1 : {}".format(labels_feat[1][correlated_features_ss1]))
+    ss1_tX = np.delete(ss1_tX, correlated_features_ss1, axis=1)
+    labels_feat[1] = np.delete(labels_feat[1],correlated_features_ss1)
+
+    
+    # Subset 2 - keep DER_sum_pt
+    correlated_features_ss2 = [21, 22, 28]
+    print("Deleted features for subset 2 : {}".format(labels_feat[2][correlated_features_ss2]))
+    ss2_tX = np.delete(ss2_tX, correlated_features_ss2, axis=1)
+    labels_feat[2] = np.delete(labels_feat[2],correlated_features_ss2)
+
+    
+     # Subset 3 - keep PRI_jet_all_pt
+    correlated_features_ss3 = [9, 21, 22]
+    print("Deleted features for subset 3 : {}".format(labels_feat[3][correlated_features_ss3]))
+    ss3_tX = np.delete(ss3_tX, correlated_features_ss3, axis=1)
+    labels_feat[3] = np.delete(labels_feat[3],correlated_features_ss3)
+
+    
+    
+    return ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat
+
+
 def replace_undef_feat(tX,method):
-    if method == 'median' : tX[tX[:,0] == -999][0] = np.median(tX[~(tX[:,0] == -999)][0])
-    elif method == 'mean' : tX[tX[:,0] == -999][0] = np.mean(tX[~(tX[:,0] == -999)][0])
-    elif method == 'delete' : tX = np.delete(tX, tX[tX[:,0] == -999], 0) 
-    return tX
+    undefined_indices = np.argwhere(tX == -999.0)
+    tX_temp = np.delete(tX, undefined_indices[:,0], 0)
+    if method == 'median' : 
+        tX_change = np.copy(tX)
+        tX_change[undefined_indices[:,0]] = np.median(tX_temp[:,0])
+    elif method == 'mean' : 
+        tX_change = np.copy(tX)
+        tX_change[undefined_indices[:,0]] = np.mean(tX_temp[:,0])
+    elif method == 'delete' : tX_change = tX_temp 
+    return tX_change
 
 def outliers_suppresion(subsample, std_number):
 
@@ -550,6 +589,7 @@ def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png", t
     final_index = np.unique(final_index, axis=0)
     
     print("\n Highly correlated features (correlation above {}) : {} ".format(threshold,labels[final_index]))
+    print("Index: ", final_index)
     
     return ranked_index, ranked_features
 

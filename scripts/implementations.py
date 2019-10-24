@@ -638,3 +638,5 @@ def bias_variance_decomposition_visualization(degrees, loss_tr, loss_te):
     plt.ylabel("error")
     plt.title("Bias-Variance Decomposition")
     plt.savefig("bias_variance")
+
+

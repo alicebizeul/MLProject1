@@ -5,9 +5,10 @@ Created on Thu Oct 24 14:17:40 2019
 @author: Florent
 """
 import numpy as np
+import os
 from proj1_helpers import *
 from implementations import * 
-import os
+from datetime import datetime
 
 
 #%% Load the training data into feature matrix, class labels, and event ids
@@ -51,46 +52,71 @@ ranked_index_ss3, ranked_features_ss3 = plot_correlation_matrix(ss3_tX, ss3_y, n
 #%% Model selction and weights computation
 
 
-loss_tr, loss_te, w0 = cross_validation_demo(ss0_y, ss0_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
-loss_tr, loss_te, w1 = cross_validation_demo(ss1_y, ss1_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
-loss_tr, loss_te, w2 = cross_validation_demo(ss2_y, ss2_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
-loss_tr, loss_te, w3 = cross_validation_demo(ss3_y, ss3_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
+
+#%% Final Training on full data set
+
+final_degree = 1 # TO UPDATE 
+
+# CHANGE THE ss0_tX variable depending on the features to use
+ss0_tX_train = build_poly(ss0_tX, final_degree)
+ss1_tX_train = build_poly(ss1_tX, final_degree)
+ss2_tX_train = build_poly(ss2_tX, final_degree)
+ss3_tX_train = build_poly(ss3_tX, final_degree)
+
+# Standardisation
+ss0_tX_train, mean0, std0 = standardize(ss0_tX_train)
+ss1_tX_train, mean1, std1 = standardize(ss1_tX_train)
+ss2_tX_train, mean2, std2 = standardize(ss2_tX_train)
+ss3_tX_train, mean3, std3 = standardize(ss3_tX_train)
+
+# TO UPDATE !!!!  
+#find optimal weights for the entire train set
+_,_, weights0 = cross_validation_demo(ss0_y, ss0_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
+_,_, weights1 = cross_validation_demo(ss1_y, ss1_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
+_,_, weights2 = cross_validation_demo(ss2_y, ss2_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
+_,_, weights3 = cross_validation_demo(ss3_y, ss3_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
 
 
+#%% Load the test set
+
+DATA_TEST_PATH = os.path.dirname(os.getcwd()) + '/data/test.csv'
+_, tX_test, ids_test = load_csv_data(DATA_TEST_PATH)
 
 #%% Generate predictions and save ouput in csv format for submission
 
-weights0 = np.ones(ss0_tX_test.shape[1])
-weights1 = np.ones(ss1_tX_test.shape[1])
-weights2 = np.ones(ss2_tX_test.shape[1])
-weights3 = np.ones(ss3_tX_test.shape[1])
+#Splitting the test set
+ss0_tX_test, index0, ss1_tX_test, index1, ss2_tX_test, index2, ss3_tX_test, index3 = split_subsets_test(tX_test, labels_feature)
 
-# Subset 0 
-y_pred0 = predict_labels(weights0, ss0_tX_test)
-#Subset 1
-y_pred1 = predict_labels(weights1, ss1_tX_test)
-#Subset 2
-y_pred2 = predict_labels(weights2, ss2_tX_test)
-#Subset 3
-y_pred3 = predict_labels(weights3, ss3_tX_test)
+
+#%%
+
+#Build the model
+ss0_tX_test = build_poly(ss0_tX_test, final_degree)
+ss1_tX_test = build_poly(ss1_tX_test, final_degree)
+ss2_tX_test = build_poly(ss2_tX_test, final_degree)
+ss3_tX_test = build_poly(ss3_tX_test, final_degree)
+
+# standardize test data
+ss0_tX_test, _, _ = standardize(ss0_tX_test, mean0, std0)
+ss1_tX_test, _, _ = standardize(ss1_tX_test, mean1, std1)
+ss2_tX_test, _, _ = standardize(ss2_tX_test, mean2, std2)
+ss3_tX_test, _, _ = standardize(ss3_tX_test, mean3, std3)
+
+# Subsets prediction
+y_pred0 = predict_labels(np.array(weights0).T, ss0_tX_test)
+y_pred1 = predict_labels(np.array(weights1).T, ss1_tX_test)
+y_pred2 = predict_labels(np.array(weights2).T, ss2_tX_test)
+y_pred3 = predict_labels(np.array(weights3).T, ss3_tX_test)
 
 #Stack all prediction from 4 subgroups to get y_pred in corredt order 
 y_pred = np.ones(len(ids_test))
-y_pred[index0] = y_pred0
-y_pred[index1] = y_pred1
-y_pred[index2] = y_pred2
-y_pred[index3] = y_pred3
 
-OUTPUT_PATH = os.path.dirname(os.getcwd()) + '/data/' + str(datetime.now())
+y_pred[index0] = np.squeeze(y_pred0)
+y_pred[index1] = np.squeeze(y_pred1)
+y_pred[index2] = np.squeeze(y_pred2)
+y_pred[index3] = np.squeeze(y_pred3)
+
+#%%
+OUTPUT_PATH = os.path.dirname(os.getcwd()) + '\\data\\Buzz.csv'
 create_csv_submission(ids_test, y_pred, OUTPUT_PATH)
-
-#%%
-
-
-
-
-
-
-
-#%%
 

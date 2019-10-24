@@ -41,7 +41,8 @@ def split_subsets(tX, y, labels_feat):
 
     return ss0_tX, ss0_y, ss1_tX, ss1_y, ss2_tX, ss2_y, ss3_tX, ss3_y, labels_feat
 
-def split_subsets_test(tX):
+
+def split_subsets_test(tX,labels_feat):
     # Splitting the dataset based on the value of PRI_jet_num
     PRI_jet_num = tX[:, 22]
     
@@ -61,9 +62,10 @@ def split_subsets_test(tX):
     ss3_tX = tX[mask_ss3]
     print("Subset 3 contains {} samples ".format(mask_ss3.sum()))
     
-    ss0_tX, ss1_tX, ss2_tX, ss3_tX = remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX)
+    ss0_tX, ss1_tX, ss2_tX, ss3_tX, _ = remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat)
 
     return ss0_tX, mask_ss0, ss1_tX, mask_ss1, ss2_tX, mask_ss2, ss3_tX, mask_ss3
+
 
 def remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat):
     
@@ -94,35 +96,31 @@ def remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat):
     
     return ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat
 
+
 def remove_correlated_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat):
     
     # Subset 0 - keep DER_pt_tot
     print("Deleted features for subset 0 : {}".format(labels_feat[0][3]))
     ss0_tX = np.delete(ss0_tX, 3, axis=1)
     labels_feat[0] = np.delete(labels_feat[0],3)
-
     
     # Subset 1 - keep DER_sum_pt
     correlated_features_ss1 = [3, 18, 21]
     print("Deleted features for subset 1 : {}".format(labels_feat[1][correlated_features_ss1]))
     ss1_tX = np.delete(ss1_tX, correlated_features_ss1, axis=1)
     labels_feat[1] = np.delete(labels_feat[1],correlated_features_ss1)
-
     
     # Subset 2 - keep DER_sum_pt
     correlated_features_ss2 = [21, 22, 28]
     print("Deleted features for subset 2 : {}".format(labels_feat[2][correlated_features_ss2]))
     ss2_tX = np.delete(ss2_tX, correlated_features_ss2, axis=1)
     labels_feat[2] = np.delete(labels_feat[2],correlated_features_ss2)
-
     
      # Subset 3 - keep PRI_jet_all_pt
     correlated_features_ss3 = [9, 21, 22]
     print("Deleted features for subset 3 : {}".format(labels_feat[3][correlated_features_ss3]))
     ss3_tX = np.delete(ss3_tX, correlated_features_ss3, axis=1)
     labels_feat[3] = np.delete(labels_feat[3],correlated_features_ss3)
-
-    
     
     return ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat
 
@@ -138,6 +136,7 @@ def replace_undef_feat(tX,method):
         tX_change[undefined_indices[:,0]] = np.mean(tX_temp[:,0])
     elif method == 'delete' : tX_change = tX_temp 
     return tX_change
+
 
 def outliers_suppresion(subsample, std_number):
 
@@ -156,14 +155,14 @@ def outliers_suppresion(subsample, std_number):
     subsample_outliers = np.delete(subsample, index, 0)
     print("size of the dataset with {in_} and without {out} the outliers".format(in_=subsample.shape, out=subsample_outliers.shape))
     print("Number of sample suppressed ouside {std} std: {supp}".format(std=std_number, supp=(subsample.shape[0] - subsample_outliers.shape[0])))
-
     return subsample_outliers
+
 
 def build_model_data(features, label):
     """Form (y,tX) to get regression data in matrix form."""
     y = label
     x = features
-    num_samples = len(y)
+    num_samples = x.shape[0]
     tx = np.column_stack((x, np.ones(num_samples, dtype=x.dtype)))
     return y, tx
 
@@ -189,7 +188,6 @@ def batch_iter(y, tx, batch_size, num_batches=1):
     """
     data_size = len(y)
 
-
     shuffle_indices = np.random.permutation(np.arange(data_size))
     shuffled_y = y[shuffle_indices]
     shuffled_tx = tx[shuffle_indices]
@@ -214,7 +212,6 @@ def compute_loss(y, tx, w, error):
     """Calculate the loss.
     You can calculate the loss using method given in arguments.
     """
-    
     y_pred = predict_labels(w,tx)
     
     if error == 'mse': return cal_mse(cal_error(y,y_pred))
@@ -314,7 +311,8 @@ def least_squares(y, tx):
     print("Least squares: w={}".format(w))
     return w
 
-def ridge_regression(y, tx, lambda_): # = REGULARIZATION
+def ridge_regression(y, tx, lambda_):
+    """regularisation"""
     aI = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
     a = tx.T.dot(tx) + aI
     b = tx.T.dot(y)
@@ -427,37 +425,37 @@ def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = F
     if method == 'rr':
         for lambda_ in hyperparams[0]:
             loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[lambda_])
-            loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+            loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
             w.append(w_tmp)
     elif method == 'ls':
         loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error)
-        loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+        loss_tr.append(concate_fold(loss_tr_tmp))
         loss_te.append(concate_fold(loss_te_tmp))
         w.append(w_tmp)
     elif method =='lsGD':
         for gamma in hyperparams[2]:
             loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error, [hyperparams[0],hyperparams[1],gamma])
-            loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+            loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
             w.append(w_tmp)
     elif method =='lsSGD':
         for gamma in hyperparams[2]:
             loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma,hyperparams[3]])
-            loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+            loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
             w.append(w_tmp)
     elif method == 'log':
         for gamma in hyperparams[2]:
             loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma])
-            loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+            loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
             w.append(w_tmp)
     elif method == 'rlog':
         for lambda_ in hyperparams[3]:
             for gamma in hyperparams[2]:
                 loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma,lambda_])
-            loss_tr.append(concate_fold(loss_tr_tmp)) # we could use something else then the mean
+            loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
             w.append(w_tmp)
     else: raise NotImplemented 
@@ -473,11 +471,12 @@ def single_cross_val(y, x, degree, k_fold, k_indices, method, error, hyperparams
     w_tmp = []
     
     for k in range(k_fold):
-        loss_tr, loss_te,_ = cross_validation(y, x, degree, k, k_indices, method, error, hyperparams)
+        loss_tr, loss_te, w = cross_validation(y, x, degree, k, k_indices, method, error, hyperparams)
         loss_tr_tmp.append(loss_tr)
         loss_te_tmp.append(loss_te)
-        w_tmp.append(w_tmp)
-    return loss_tr_tmp, loss_te_tmp, w_tmp
+        w_tmp.append(w)
+    w_mean = np.mean(w_tmp,axis=0)
+    return loss_tr_tmp, loss_te_tmp, w_mean
 
 def equal_class(y,x):
     y_class0 = y[y==-1]

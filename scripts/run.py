@@ -43,12 +43,12 @@ print(ss3_tX.shape)
 
 labels_0, labels_1, labels_2, labels_3 = labels_feat
 # SUBSET 0
-ss0_tX3, ss1_tX3, ss2_tX3, ss3_tX3, labels_feat = remove_correlated_feat(ss0_tX3, ss1_tX3, ss2_tX3, ss3_tX3, labels_feat)
+#ss0_tX3, ss1_tX3, ss2_tX3, ss3_tX3, labels_feat = remove_correlated_feat(ss0_tX3, ss1_tX3, ss2_tX3, ss3_tX3, labels_feat)
 
 
 #%% Model selction and weights computation
 
-
+#Ps de crose val, train sur tout les paramètre
 
 #%% Final Training on full data set
 
@@ -68,10 +68,10 @@ ss3_tX_train, mean3, std3 = standardize(ss3_tX_train)
 
 # TO UPDATE !!!!  
 #find optimal weights for the entire train set
-_,_, weights0 = cross_validation_demo(ss0_y, ss0_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
-_,_, weights1 = cross_validation_demo(ss1_y, ss1_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
-_,_, weights2 = cross_validation_demo(ss2_y, ss2_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
-_,_, weights3 = cross_validation_demo(ss3_y, ss3_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
+_,_, weights0,_ = cross_validation_demo(ss0_y, ss0_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
+_,_, weights1,_ = cross_validation_demo(ss1_y, ss1_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
+_,_, weights2,_ = cross_validation_demo(ss2_y, ss2_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
+_,_, weights3,_ = cross_validation_demo(ss3_y, ss3_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
 
 
 #%% Load the test set
@@ -92,6 +92,7 @@ ss0_tX_test = build_poly(ss0_tX_test, final_degree)
 ss1_tX_test = build_poly(ss1_tX_test, final_degree)
 ss2_tX_test = build_poly(ss2_tX_test, final_degree)
 ss3_tX_test = build_poly(ss3_tX_test, final_degree)
+
 
 # standardize test data
 ss0_tX_test, _, _ = standardize(ss0_tX_test, mean0, std0)
@@ -114,6 +115,6 @@ y_pred[index2] = np.squeeze(y_pred2)
 y_pred[index3] = np.squeeze(y_pred3)
 
 #%%
-OUTPUT_PATH = os.path.dirname(os.getcwd()) + '\\data\\Buzz2.csv'
+OUTPUT_PATH = os.path.dirname(os.getcwd()) + '\\data\\Buzz.csv'
 create_csv_submission(ids_test, y_pred, OUTPUT_PATH)
 

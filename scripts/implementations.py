@@ -665,7 +665,7 @@ def result_crossval_accuracy(acc):
     axes[0].set_ylabel('Accuracy')
     
     axes[1].plot(np.mean(acc,axis=1))
-    axes[1].set_title('Mean accuracy Errors across folds across hyperparam values')
+    axes[1].set_title('Mean accuracy across folds across hyperparam values')
     axes[1].set_ylabel('Accuracy')
     plt.show()
 

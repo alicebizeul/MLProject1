@@ -125,17 +125,20 @@ def remove_correlated_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat):
     return ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat
 
 
-def replace_undef_feat(tX,method):
+def replace_undef_feat(tX,y,method):
     undefined_indices = np.argwhere(tX == -999.0)
     tX_temp = np.delete(tX, undefined_indices[:,0], 0)
+    y_change = np.copy(y)
     if method == 'median' : 
         tX_change = np.copy(tX)
         tX_change[undefined_indices[:,0]] = np.median(tX_temp[:,0])
     elif method == 'mean' : 
         tX_change = np.copy(tX)
         tX_change[undefined_indices[:,0]] = np.mean(tX_temp[:,0])
-    elif method == 'delete' : tX_change = tX_temp 
-    return tX_change
+    elif method == 'delete' : 
+        tX_change = tX_temp 
+        y_change = np.delete(y_change, undefined_indices[:,0],0)
+    return tX_change, y_change 
 
 
 def outliers_suppresion(subsample, std_number):

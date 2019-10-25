@@ -24,10 +24,10 @@ labels_feature = np.genfromtxt(DATA_TRAIN_PATH, delimiter=",", dtype=str, max_ro
 ss0_tX, ss0_y, ss1_tX, ss1_y, ss2_tX, ss2_y, ss3_tX, ss3_y, labels_feat = split_subsets(tX, y,labels_feature)
 
 #Dealing with undefined feature
-ss0_tX = replace_undef_feat(ss0_tX,method = 'median')
-ss1_tX = replace_undef_feat(ss1_tX,method = 'median')
-ss2_tX = replace_undef_feat(ss2_tX,method = 'median')
-ss3_tX = replace_undef_feat(ss3_tX,method = 'median')
+ss0_tX, ss0_y = replace_undef_feat(ss0_tX,ss0_y,method = 'delete')
+ss1_tX, ss1_y = replace_undef_feat(ss1_tX,ss1_y,method = 'delete')
+ss2_tX, ss2_y = replace_undef_feat(ss2_tX,ss2_y,method = 'delete')
+ss3_tX, ss3_y = replace_undef_feat(ss3_tX,ss3_y,method = 'delete')
 
 #Dealing with outiliers
 _=outliers_suppresion(ss0_tX, 3)
@@ -117,6 +117,6 @@ y_pred[index2] = np.squeeze(y_pred2)
 y_pred[index3] = np.squeeze(y_pred3)
 
 #%%
-OUTPUT_PATH = os.path.dirname(os.getcwd()) + '\\data\\Buzz.csv'
+OUTPUT_PATH = os.path.dirname(os.getcwd()) + '\\data\\Buzz2.csv'
 create_csv_submission(ids_test, y_pred, OUTPUT_PATH)
 

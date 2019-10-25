@@ -254,11 +254,25 @@ def accuracy(y,y_pred):
     """ Returns accuracy of classification = percentage of success"""
     return np.sum(y == y_pred)/len(y)
 
+"""
 def cal_loglike(y, tx, w):
-    """compute the cost by negative log likelihood."""
+    compute the cost by negative log likelihood.
     pred = sigmoid(tx.dot(w))
     loss = y.T.dot(np.log(pred)) + (1 - y).T.dot(np.log(1 - pred))
     return np.squeeze(- loss)
+"""
+
+def cal_loglike(y, tx, w): # A MODIFIER !!!
+    """Compute the cost by negative log likelihood."""
+    sigmo = sigmoid(tx.dot(w))
+
+    #avoid issues zero log
+    epsilon = 0
+    if len(sigmo[(1-sigmo)==0]) > 0 or len(sigmo[sigmo==0])> 0:
+        epsilon = 1e-9
+
+    loss = y.T.dot(np.log(sigmo+epsilon)) + (1 - y).T.dot(np.log(1 - sigmo+epsilon))
+    return np.squeeze(-loss)
 
 def cal_loglike_r(y, tx, w, lambda_):
      return cal_loglike(y, tx, w) + lambda_ * np.squeeze(w.T.dot(w))
@@ -323,9 +337,10 @@ def ridge_regression(y, tx, lambda_):
     print("Ridge regression: w={}".format(w))
     return w
 
+
 def sigmoid(t):
-    """apply sigmoid function on t."""
     return 1.0 / (1 + np.exp(-t))
+
 
 def compute_logistic_gradient(y, tx, w):
     """compute the gradient of loss."""
@@ -400,9 +415,12 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     elif method == 'rlog': w =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], hyperparams[0], hyperparams[1], hyperparams[2]) # regularised logistic reg
     else: raise NotImplemented
     
-    if method == 'log' or method == 'rlog': # A REVOIR SI CEST BON !!!!
+    if method == 'log':
         loss_tr = cal_loglike(y_tr, tx_tr, w)
         loss_te = cal_loglike(y_te, tx_te, w)
+    elif method == 'rlog': # A REVOIR SI CEST BON !!!!
+        loss_tr = cal_loglike_r(y_tr, tx_tr, w, hyperparams[3])
+        loss_te = cal_loglike_r(y_te, tx_te, w, hyperparams[3])
     else :
         # calculate the loss for train and test data
         loss_tr = compute_loss(y_tr, tx_tr, w, error)

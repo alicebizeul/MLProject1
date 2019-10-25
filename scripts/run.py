@@ -29,24 +29,21 @@ ss1_tX, ss1_y = replace_undef_feat(ss1_tX,ss1_y,method = 'delete')
 ss2_tX, ss2_y = replace_undef_feat(ss2_tX,ss2_y,method = 'delete')
 ss3_tX, ss3_y = replace_undef_feat(ss3_tX,ss3_y,method = 'delete')
 
-#Dealing with outiliers
-_=outliers_suppresion(ss0_tX, 3)
-_=outliers_suppresion(ss1_tX, 3)
-_=outliers_suppresion(ss2_tX, 3)
-_=outliers_suppresion(ss3_tX, 3)
+print(ss3_tX.shape)
 
+#Dealing with outiliers
+ss0_tX, ss0_y = outliers_suppresion(ss0_tX, ss0_y, 3)
+ss1_tX, ss1_y = outliers_suppresion(ss1_tX, ss1_y, 3)
+ss2_tX, ss2_y = outliers_suppresion(ss2_tX, ss2_y, 3)
+ss3_tX, ss3_y = outliers_suppresion(ss3_tX, ss3_y, 3)
+
+print(ss3_tX.shape)
 
 #%%Feature selection
 
 labels_0, labels_1, labels_2, labels_3 = labels_feat
 # SUBSET 0
-ranked_index_ss0, ranked_features_ss0 = plot_correlation_matrix(ss0_tX, ss0_y, np.append(labels_0,'Output'), "CorrelationMatrix_ss0.png")
-# SUBSET 1
-ranked_index_ss1, ranked_features_ss1 = plot_correlation_matrix(ss1_tX, ss1_y, np.append(labels_1,'Output'), "CorrelationMatrix_ss1.png")
-# SUBSET 2
-ranked_index_ss2, ranked_features_ss2 = plot_correlation_matrix(ss2_tX, ss2_y, np.append(labels_2,'Output'), "CorrelationMatrix_ss2.png")
-# SUBSET 3
-ranked_index_ss3, ranked_features_ss3 = plot_correlation_matrix(ss3_tX, ss3_y, np.append(labels_3,'Output'), "CorrelationMatrix_ss3.png")
+ss0_tX3, ss1_tX3, ss2_tX3, ss3_tX3, labels_feat = remove_correlated_feat(ss0_tX3, ss1_tX3, ss2_tX3, ss3_tX3, labels_feat)
 
 
 #%% Model selction and weights computation

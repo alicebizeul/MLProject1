@@ -131,10 +131,10 @@ def replace_undef_feat(tX,y,method):
     y_change = np.copy(y)
     if method == 'median' : 
         tX_change = np.copy(tX)
-        tX_change[undefined_indices[:,0]] = np.median(tX_temp[:,0])
+        tX_change[undefined_indices[:,0],0] = np.median(tX_temp[:,0])
     elif method == 'mean' : 
         tX_change = np.copy(tX)
-        tX_change[undefined_indices[:,0]] = np.mean(tX_temp[:,0])
+        tX_change[undefined_indices[:,0],0] = np.mean(tX_temp[:,0])
     elif method == 'delete' : 
         tX_change = tX_temp 
         y_change = np.delete(y_change, undefined_indices[:,0],0)

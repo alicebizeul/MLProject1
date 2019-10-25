@@ -141,7 +141,7 @@ def replace_undef_feat(tX,y,method):
     return tX_change, y_change 
 
 
-def outliers_suppresion(subsample, std_number):
+def outliers_suppresion(subsample,y, std_number):
 
     deviation_feature = np.std(subsample,axis = 0)
     mean_feature = np.mean(subsample,axis = 0)
@@ -156,9 +156,10 @@ def outliers_suppresion(subsample, std_number):
                 index.append(j)
 
     subsample_outliers = np.delete(subsample, index, 0)
+    y_outliers = np.delete(y, index, 0)
     print("size of the dataset with {in_} and without {out} the outliers".format(in_=subsample.shape, out=subsample_outliers.shape))
     print("Number of sample suppressed ouside {std} std: {supp}".format(std=std_number, supp=(subsample.shape[0] - subsample_outliers.shape[0])))
-    return subsample_outliers
+    return subsample_outliers, y_outliers
 
 
 def build_model_data(features, label):

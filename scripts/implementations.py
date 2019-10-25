@@ -398,6 +398,7 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     x_te = x[te_indice]
     x_tr = x[tr_indice]
     
+    
     # form data with polynomial degree
     tx_tr = build_poly(x_tr, degree)
     tx_te = build_poly(x_te, degree)
@@ -416,6 +417,7 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     elif method == 'rlog': w =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], hyperparams[0], hyperparams[1], hyperparams[2]) # regularised logistic reg
     else: raise NotImplemented
     
+   
     if method == 'log':
         loss_tr = cal_loglike(y_tr, tx_tr, w)
         loss_te = cal_loglike(y_te, tx_te, w)
@@ -427,7 +429,11 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
         loss_tr = compute_loss(y_tr, tx_tr, w, error)
         loss_te = compute_loss(y_te, tx_te, w, error)      
     
-    return loss_tr, loss_te, w
+    
+    y_pred = predict_labels(np.array(w).T, tx_te)
+    acc = accuracy(y_te,y_pred)
+    
+    return loss_tr, loss_te, w, acc
      
     
 def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr',hyperparams=[]):
@@ -441,48 +447,55 @@ def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = F
     loss_te = []
     
     w = []
+    accuracy = []
     
     # cross validation
     if method == 'rr':
         for lambda_ in hyperparams[0]:
-            loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[lambda_])
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp  = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[lambda_])
             loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
+            accuracy.append(acc_tmp)
             w.append(w_tmp)
     elif method == 'ls':
-        loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error)
+        loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp= single_cross_val(y, x, degree, k_fold, k_indices, method,error)
         loss_tr.append(concate_fold(loss_tr_tmp))
         loss_te.append(concate_fold(loss_te_tmp))
+        accuracy.append(acc_tmp)
         w.append(w_tmp)
     elif method =='lsGD':
         for gamma in hyperparams[2]:
-            loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error, [hyperparams[0],hyperparams[1],gamma])
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error, [hyperparams[0],hyperparams[1],gamma])
             loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
+            accuracy.append(acc_tmp)
             w.append(w_tmp)
     elif method =='lsSGD':
         for gamma in hyperparams[2]:
-            loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma,hyperparams[3]])
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma,hyperparams[3]])
             loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
+            accuracy.append(acc_tmp)
             w.append(w_tmp)
     elif method == 'log':
         for gamma in hyperparams[2]:
-            loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma])
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma])
             loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
+            accuracy.append(acc_tmp)
             w.append(w_tmp)
     elif method == 'rlog':
         for lambda_ in hyperparams[3]:
             for gamma in hyperparams[2]:
-                loss_tr_tmp, loss_te_tmp, w_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma,lambda_])
+                loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma,lambda_])
             loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
+            accuracy.append(acc_tmp)
             w.append(w_tmp)
     else: raise NotImplemented 
         
     #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER    
-    return loss_tr, loss_te, w
+    return loss_tr, loss_te, w, accuracy
  
 
           
@@ -490,14 +503,17 @@ def single_cross_val(y, x, degree, k_fold, k_indices, method, error, hyperparams
     loss_tr_tmp = []
     loss_te_tmp = []
     w_tmp = []
+    accuracy = []
     
     for k in range(k_fold):
-        loss_tr, loss_te, w = cross_validation(y, x, degree, k, k_indices, method, error, hyperparams)
+        loss_tr, loss_te, w , acc = cross_validation(y, x, degree, k, k_indices, method, error, hyperparams)
         loss_tr_tmp.append(loss_tr)
-        loss_te_tmp.append(loss_te)
+        loss_te_tmp.append(loss_te)    
         w_tmp.append(w)
+        accuracy.append(acc)
     w_mean = np.mean(w_tmp,axis=0)
-    return loss_tr_tmp, loss_te_tmp, w_mean
+    print("Accuracy = {}".format(accuracy))
+    return loss_tr_tmp, loss_te_tmp, w_mean, accuracy
 
 def equal_class(y,x):
     y_class0 = y[y==-1]
@@ -640,6 +656,17 @@ def result_crossval(loss_tr,loss_te):
     axes[1].boxplot(loss_te)
     axes[1].set_title('Test : Errors across folds across hyperparam values')
     axes[1].set_ylabel('Error')
+    plt.show()
+    
+def result_crossval_accuracy(acc):
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    axes[0].boxplot(acc)
+    axes[0].set_title('Accuracy across folds across hyperparam values')
+    axes[0].set_ylabel('Accuracy')
+    
+    axes[1].plot(np.mean(acc,axis=1))
+    axes[1].set_title('Mean accuracy Errors across folds across hyperparam values')
+    axes[1].set_ylabel('Accuracy')
     plt.show()
 
 def bias_variance_decomposition_visualization(degrees, loss_tr, loss_te):

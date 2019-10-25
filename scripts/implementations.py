@@ -262,7 +262,7 @@ def cal_loglike(y, tx, w):
     return np.squeeze(- loss)
 
 def cal_loglike_r(y, tx, w, lambda_):
-     return compute_loglike(y, tx, w) + lambda_ * np.squeeze(w.T.dot(w))
+     return cal_loglike(y, tx, w) + lambda_ * np.squeeze(w.T.dot(w))
 
 # Optimisation Methods 
 
@@ -290,7 +290,6 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
     # Define parameters to store w and loss
 
     w = initial_w
-    data_size = y.shape[0]
 
     for n_iter in range(max_iters):
         for batch in range(batchsize):
@@ -403,8 +402,8 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     else: raise NotImplemented
     
     if method == 'log' or method == 'rlog': # A REVOIR SI CEST BON !!!!
-        loss_tr = compute_logistic_loss(y_tr, tx_tr, w)
-        loss_te = compute_logistic_loss(y_te, tx_te, w)
+        loss_tr = cal_loglike(y_tr, tx_tr, w)
+        loss_te = cal_loglike(y_te, tx_te, w)
     else :
         # calculate the loss for train and test data
         loss_tr = compute_loss(y_tr, tx_tr, w, error)

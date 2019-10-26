@@ -62,9 +62,9 @@ def split_subsets_test(tX,labels_feat):
     ss3_tX = tX[mask_ss3]
     print("Subset 3 contains {} samples ".format(mask_ss3.sum()))
     
-    ss0_tX, ss1_tX, ss2_tX, ss3_tX, _ = remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat)
+    ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat = remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat)
 
-    return ss0_tX, mask_ss0, ss1_tX, mask_ss1, ss2_tX, mask_ss2, ss3_tX, mask_ss3
+    return ss0_tX, mask_ss0, ss1_tX, mask_ss1, ss2_tX, mask_ss2, ss3_tX, mask_ss3, labels_feat
 
 
 def remove_undef_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat):
@@ -335,7 +335,7 @@ def ridge_regression(y, tx, lambda_):
     b = tx.T.dot(y)
     w = np.linalg.solve(a, b)
     
-    print("Ridge regression: w={}".format(w))
+    #print("Ridge regression: w={}".format(w))
     return w
 
 
@@ -544,7 +544,7 @@ def single_cross_val(y, x, degree, k_fold, k_indices, method, error, hyperparams
         w_tmp.append(w)
         accuracy.append(acc)
     w_mean = np.mean(w_tmp,axis=0)
-    print("Accuracy = {}".format(accuracy))
+    #print("Accuracy = {}".format(accuracy))
     return loss_tr_tmp, loss_te_tmp, w_mean, accuracy
 
 def equal_class(y,x):
@@ -680,24 +680,28 @@ def cal_point_biserial_correlation(x, y):
     
     return coef
 
-def result_crossval(loss_tr,loss_te):
+def result_crossval(loss_tr,loss_te,degree):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].boxplot(loss_tr)
-    axes[0].set_title('Train : Errors across folds across hyperparam values')
+    title_0 = "Train Errors of {deg} degree".format(deg=degree)
+    axes[0].set_title(title_0)
     axes[0].set_ylabel('Error')
     axes[1].boxplot(loss_te)
-    axes[1].set_title('Test : Errors across folds across hyperparam values')
+    title_1 = "Train Errors of {deg} degree".format(deg=degree)
+    axes[1].set_title(title_1)
     axes[1].set_ylabel('Error')
     plt.show()
     
-def result_crossval_accuracy(acc):
+def result_crossval_accuracy(acc,degree):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].boxplot(acc)
-    axes[0].set_title('Accuracy across folds across hyperparam values')
-    axes[0].set_ylabel('Accuracy')
+    title_0 = "Accuracy of {deg} degree".format(deg=degree)
+    axes[0].set_title(title_0)
+    axes[0].set_ylabel('Accuracy')   
     
     axes[1].plot(np.mean(acc,axis=1))
-    axes[1].set_title('Mean accuracy across folds across hyperparam values')
+    title_1 = "Mean Accuracy of {deg} degree with".format(deg=degree)
+    axes[1].set_title(title_1)
     axes[1].set_ylabel('Accuracy')
     plt.show()
 

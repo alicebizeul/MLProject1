@@ -450,7 +450,9 @@ def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = F
     #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER    
     return loss_tr, loss_te, w, accuracy
 
-def cross_validation_demo_featselect(y, x, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr',hyperparams=[]):
+def cross_validation_demo_featselect(y, x, ranked_index, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr',hyperparams=[]):
+    
+    x = np.fliplr(x[:,ranked_index])
     
     if class_distribution == True : y, x = equal_class(y,x)
     k_indices = build_k_indices(y, k_fold, seed)
@@ -469,12 +471,36 @@ def cross_validation_demo_featselect(y, x, degree, seed, k_fold = 4, class_distr
         loss_tr_tmp, loss_te_tmp, w_tmp, accuracy_tmp = choose_method(y, x_croped, degree, seed, k_fold, k_indices, error, method, hyperparams)
         loss_tr.append(loss_tr_tmp)
         loss_te.append(loss_te_tmp)
-        w.append(w)
-        accuracy.append(accuracy)
+        w.append(w_tmp)
+        accuracy.append(accuracy_tmp)
             
     
     #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER    
     return loss_tr, loss_te, w, accuracy
+
+
+def feat_augmentation(tx, threshold):
+    
+    corr_matrix = np.corrcoef(tx.T)
+    index = np.argwhere(corr_matrix < threshold) #set threshold as an argument
+    
+    final_index = []
+    for i in range(index.shape[0]):
+        if index[i, 0] != index[i, 1]:
+            final_index.append(index[i,:])
+     
+    final_index = np.sort(final_index, axis=1) 
+    final_index = np.unique(final_index, axis=0)
+
+    for i in range(final_index.shape[0]):
+        feat1  = tx[:,final_index[i][0]]
+        feat2  = tx[:,final_index[i][1]]
+        tx = np.c_[tx, np.multiply(feat1,feat2)]
+
+
+    
+    return tx
+
 
 def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class', method='rr',hyperparams=[]):
     
@@ -619,7 +645,7 @@ def cross_validation_visualization(lambds, loss_tr, loss_te):
     plt.savefig("cross_validation")
 
 
-def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png", threshold=0.85):
+def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png", threshold=0.85, print_correlated_pairs=False):
     """Computes and plots a heatmap of the correlation matrix. This matrix comprises the Pearson correlation
     coefficients between (continuous) features and the Point-biserial coefficients between each feature and 
     the (categorical) output."""
@@ -646,19 +672,20 @@ def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png", t
     print("Ranked absolute correlation with output: ", np.sort(correlation_output))
     print("Ranked features: ", ranked_features)
 
-    #Print pairs of features highly correlated (above threshold)
-    index = np.argwhere(correlation_features > threshold)
-    final_index = []
-    for i in range(index.shape[0]):
-        if index[i, 0] != index[i, 1]:
-            final_index.append(index[i,:])
-     
-    final_index = np.sort(final_index, axis=1) 
-    final_index = np.unique(final_index, axis=0)
-    
-    print("\n Highly correlated features (correlation above {}) : {} ".format(threshold,labels[final_index]))
-    print("Index: ", final_index)
-    
+    if print_correlated_pairs:
+        #Print pairs of features highly correlated (above threshold)
+        index = np.argwhere(correlation_features > threshold)
+        final_index = []
+        for i in range(index.shape[0]):
+            if index[i, 0] != index[i, 1]:
+                final_index.append(index[i,:])
+         
+        final_index = np.sort(final_index, axis=1) 
+        final_index = np.unique(final_index, axis=0)
+        
+        print("\n Highly correlated features (correlation above {}) : {} ".format(threshold,labels[final_index]))
+        print("Index: ", final_index)
+        
     return ranked_index, ranked_features
 
 def cal_point_biserial_correlation(x, y):
@@ -680,7 +707,11 @@ def cal_point_biserial_correlation(x, y):
     
     return coef
 
-def result_crossval(loss_tr,loss_te):
+def result_crossval(loss_tr,loss_te, feature_selection=False):
+    if feature_selection:
+       loss_tr = np.mean(loss_tr, axis=2)
+       loss_te = np.mean(loss_te, axis=2)
+            
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].boxplot(loss_tr)
     axes[0].set_title('Train : Errors across folds across hyperparam values')
@@ -693,13 +724,24 @@ def result_crossval(loss_tr,loss_te):
 def result_crossval_accuracy(acc):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].boxplot(acc)
-    axes[0].set_title('Accuracy across folds across hyperparam values')
     axes[0].set_ylabel('Accuracy')
-    
+    axes[0].set_title('Accuracy across folds across hyperparam values')
     axes[1].plot(np.mean(acc,axis=1))
-    axes[1].set_title('Mean accuracy across folds across hyperparam values')
     axes[1].set_ylabel('Accuracy')
+    axes[1].set_title('Mean accuracy across folds across hyperparam values')
     plt.show()
+    
+def result_crossval_accuracy_feat(acc, lambdas):
+
+    acc = np.mean(acc, axis=2)
+    fig, axes = plt.subplots(1, 1, figsize=(12, 4))
+    axes.plot(np.mean(acc,axis=1))
+    axes.set_ylabel('Accuracy')
+    axes.set_title('Mean accuracy as a function of feature number')
+    best_lambdas = [lambdas[i] for i in np.argmax(acc, axis=1)]
+    best_feature_set = np.argmax(np.mean(acc,axis=1))
+    print("Best combination : {} features, lambda {}, acc. {}".format(best_feature_set+1, best_lambdas[best_feature_set], np.max(np.mean(acc,axis=1)))) # index 0 : 1 feature
+
 
 def bias_variance_decomposition_visualization(degrees, loss_tr, loss_te):
     """visualize the bias variance decomposition."""

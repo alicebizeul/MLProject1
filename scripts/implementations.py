@@ -442,14 +442,48 @@ def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = F
     k_indices = build_k_indices(y, k_fold, seed)
            
     verify_proportion(y,k_indices)
+    
+    # cross validation
+    loss_tr, loss_te, w, accuracy = choose_method(y, x, degree, seed, k_fold, k_indices, error, method, hyperparams)
+    
+        
+    #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER    
+    return loss_tr, loss_te, w, accuracy
 
+def cross_validation_demo_featselect(y, x, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr',hyperparams=[]):
+    
+    if class_distribution == True : y, x = equal_class(y,x)
+    k_indices = build_k_indices(y, k_fold, seed)
+           
+    verify_proportion(y,k_indices)
+    
+    loss_tr = []
+    loss_te = []
+    w = []
+    accuracy = []
+    
+    # cross validation
+    for feat in range(1,x.shape[1]+1):
+        x_croped = x[:,:feat]
+        print('Number of best features tested : {}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'.format(x_croped.shape[1]))
+        loss_tr_tmp, loss_te_tmp, w_tmp, accuracy_tmp = choose_method(y, x_croped, degree, seed, k_fold, k_indices, error, method, hyperparams)
+        loss_tr.append(loss_tr_tmp)
+        loss_te.append(loss_te_tmp)
+        w.append(w)
+        accuracy.append(accuracy)
+            
+    
+    #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER    
+    return loss_tr, loss_te, w, accuracy
+
+def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class', method='rr',hyperparams=[]):
+    
     loss_tr = []
     loss_te = []
     
     w = []
     accuracy = []
     
-    # cross validation
     if method == 'rr':
         for lambda_ in hyperparams[0]:
             loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp  = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[lambda_])
@@ -493,8 +527,6 @@ def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = F
             accuracy.append(acc_tmp)
             w.append(w_tmp)
     else: raise NotImplemented 
-        
-    #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER    
     return loss_tr, loss_te, w, accuracy
  
 

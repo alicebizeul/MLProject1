@@ -687,7 +687,7 @@ def result_crossval(loss_tr,loss_te,degree):
     axes[0].set_title(title_0)
     axes[0].set_ylabel('Error')
     axes[1].boxplot(loss_te)
-    title_1 = "Train Errors of {deg} degree".format(deg=degree)
+    title_1 = "Test Errors of {deg} degree".format(deg=degree)
     axes[1].set_title(title_1)
     axes[1].set_ylabel('Error')
     plt.show()

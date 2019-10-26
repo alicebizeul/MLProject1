@@ -162,6 +162,15 @@ def outliers_suppresion(subsample,y, std_number):
     return subsample_outliers, y_outliers
 
 
+def feature_processing(ss_tX, ss_y,replace_method, replace_feature = True, suppr_outliers = True, threshold = 3):
+    
+    if replace_feature == True:  ss_tX, ss_y = replace_undef_feat(ss_tX, ss_y, method = replace_method)
+    if suppr_outliers == True: ss_tX, ss_y = outliers_suppresion(ss_tX, ss_y, threshold)
+    
+    return ss_tX, ss_y
+
+
+
 def build_model_data(features, label):
     """Form (y,tX) to get regression data in matrix form."""
     y = label

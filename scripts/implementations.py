@@ -158,7 +158,7 @@ def outliers_suppresion(subsample,y, std_number):
     subsample_outliers = np.delete(subsample, index, 0)
     y_outliers = np.delete(y, index, 0)
     print("size of the dataset with {in_} and without {out} the outliers".format(in_=subsample.shape, out=subsample_outliers.shape))
-    print("Number of sample suppressed ouside {std} std: {supp}".format(std=std_number, supp=(subsample.shape[0] - subsample_outliers.shape[0])))
+    print("Number of sample suppressed oustide {std} std: {supp}".format(std=std_number, supp=(subsample.shape[0] - subsample_outliers.shape[0])))
     return subsample_outliers, y_outliers
 
 

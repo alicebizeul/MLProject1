@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Oct 24 14:17:40 2019
+Created on Sat Oct 26 19:35:33 2019
 
 @author: Florent
 """
@@ -18,47 +18,66 @@ y, tX, ids = load_csv_data(DATA_TRAIN_PATH)
 labels_feature = np.genfromtxt(DATA_TRAIN_PATH, delimiter=",", dtype=str, max_rows=1)[2:]
 
 
+#%% Load the test set
+DATA_TEST_PATH = os.path.dirname(os.getcwd()) + '/data/test.csv'
+_, tX_test, ids_test = load_csv_data(DATA_TEST_PATH)
+
+
 #%% Feature Engineering
 
 # Subsetting the dataset
 ss0_tX, ss0_y, ss1_tX, ss1_y, ss2_tX, ss2_y, ss3_tX, ss3_y, labels_feat = split_subsets(tX, y,labels_feature)
 
-#Dealing with undefined feature
-ss0_tX, ss0_y = replace_undef_feat(ss0_tX,ss0_y,method = 'delete')
-ss1_tX, ss1_y = replace_undef_feat(ss1_tX,ss1_y,method = 'delete')
-ss2_tX, ss2_y = replace_undef_feat(ss2_tX,ss2_y,method = 'delete')
-ss3_tX, ss3_y = replace_undef_feat(ss3_tX,ss3_y,method = 'delete')
+ss0_tX, ss0_y, median0 = feature_processing (ss0_tX, ss0_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=[])
+ss1_tX, ss1_y, median1 = feature_processing (ss1_tX, ss1_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=[])
+ss2_tX, ss2_y, median2 = feature_processing (ss2_tX, ss2_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=[])
+ss3_tX, ss3_y, median3 = feature_processing (ss3_tX, ss3_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=[])
+    
 
-print(ss3_tX.shape)
+#%%Feature selection --> Juliane
 
-#Dealing with outiliers
-ss0_tX, ss0_y = outliers_suppresion(ss0_tX, ss0_y, 3)
-ss1_tX, ss1_y = outliers_suppresion(ss1_tX, ss1_y, 3)
-ss2_tX, ss2_y = outliers_suppresion(ss2_tX, ss2_y, 3)
-ss3_tX, ss3_y = outliers_suppresion(ss3_tX, ss3_y, 3)
+#ss0_tX, ss1_tX, ss2_tX, ss3_tX,_ = remove_correlated_feat(ss0_tX, ss1_tX, ss2_tX, ss3_tX, labels_feat)
+#ss0_tX_test, ss1_tX_test, ss2_tX_test, ss3_tX_test, labels_feat_test = remove_correlated_feat(ss0_tX_test, ss1_tX_test, ss2_tX_test, ss3_tX_test, labels_feat)
 
-print(ss3_tX.shape)
+#%% Hyperparameters initiation
 
-#%%Feature selection
+#final_degree = [12,14,12,12] 
+#lambdas = [0.001,0.001,0.001,0.001]
 
-labels_0, labels_1, labels_2, labels_3 = labels_feat
-# SUBSET 0
-#ss0_tX3, ss1_tX3, ss2_tX3, ss3_tX3, labels_feat = remove_correlated_feat(ss0_tX3, ss1_tX3, ss2_tX3, ss3_tX3, labels_feat)
+#lambdas = [3.35981829e-10,1.0e-9,2.6e-8,1e-11] #Best avec mean
+#final_degree = [12,14,12,12] 
+"""
+lambdas = [1.58489319e-14,1.58489319e-14,1.58489319e-14,1.58489319e-14]
+final_degree = [14,13,14,14]    #0.829872
+
+lambdas = [2.15443469e-15,7.19685673e-16,1.58489319e-14,1.58489319e-14]
+final_degree = [16,15,14,14]    #0.8303
+
+lambdas = [2.15443469e-15,7.19685673e-16,1.0e-15,1.58489319e-14]
+final_degree = [16,15,16,14]   #0.830324
+
+lambdas = [2.15443469e-15,7.19685673e-16,1.0e-16,1.58489319e-14]
+final_degree = [16,15,17,14] #0.830388
+"""
+lambdas = [2.15443469e-15,7.19685673e-16,2.15443469e-15,1.0e-15]
+final_degree = [16,15,16,14] #0.830504
 
 
-#%% Model selction and weights computation
 
-#Ps de crose val, train sur tout les paramètre
+
 
 #%% Final Training on full data set
+# CHANGE THE ss_tX variable depending on the features to use
 
-final_degree = 1 # TO UPDATE 
+ss0_tX_train_aug, index_0 = feat_augmentation(ss0_tX, 0.003, True)
+ss1_tX_train_aug, index_1 = feat_augmentation(ss1_tX, 0.003, True)
+ss2_tX_train_aug, index_2 = feat_augmentation(ss2_tX, 0.003, True)
+ss3_tX_train_aug, index_3 = feat_augmentation(ss3_tX, 0.003, True)
 
-# CHANGE THE ss0_tX variable depending on the features to use
-ss0_tX_train = build_poly(ss0_tX, final_degree)
-ss1_tX_train = build_poly(ss1_tX, final_degree)
-ss2_tX_train = build_poly(ss2_tX, final_degree)
-ss3_tX_train = build_poly(ss3_tX, final_degree)
+ss0_tX_train = build_poly(ss0_tX, final_degree[0], feature_augmentation=True, tx_aug=ss0_tX_train_aug)
+ss1_tX_train = build_poly(ss1_tX, final_degree[1], feature_augmentation=True, tx_aug=ss1_tX_train_aug)
+ss2_tX_train = build_poly(ss2_tX, final_degree[2], feature_augmentation=True, tx_aug=ss2_tX_train_aug)
+ss3_tX_train = build_poly(ss3_tX, final_degree[3], feature_augmentation=True, tx_aug=ss3_tX_train_aug)
 
 # Standardisation
 ss0_tX_train, mean0, std0 = standardize(ss0_tX_train)
@@ -66,33 +85,33 @@ ss1_tX_train, mean1, std1 = standardize(ss1_tX_train)
 ss2_tX_train, mean2, std2 = standardize(ss2_tX_train)
 ss3_tX_train, mean3, std3 = standardize(ss3_tX_train)
 
-# TO UPDATE !!!!  
-#find optimal weights for the entire train set
-_,_, weights0,_ = cross_validation_demo(ss0_y, ss0_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
-_,_, weights1,_ = cross_validation_demo(ss1_y, ss1_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
-_,_, weights2,_ = cross_validation_demo(ss2_y, ss2_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
-_,_, weights3,_ = cross_validation_demo(ss3_y, ss3_tX, degree = 1, seed = 5, k_fold = 5, class_distribution = False, error = 'rmse', method = 'ls')
-
-
-#%% Load the test set
-
-DATA_TEST_PATH = os.path.dirname(os.getcwd()) + '/data/test.csv'
-_, tX_test, ids_test = load_csv_data(DATA_TEST_PATH)
+#Model on the whole set
+weights0 = ridge_regression(ss0_y, ss0_tX_train, lambdas[0])
+weights1 = ridge_regression(ss1_y, ss1_tX_train, lambdas[1])
+weights2 = ridge_regression(ss2_y, ss2_tX_train, lambdas[2])
+weights3 = ridge_regression(ss3_y, ss3_tX_train, lambdas[3])
 
 #%% Generate predictions and save ouput in csv format for submission
-
-#Splitting the test set
-ss0_tX_test, index0, ss1_tX_test, index1, ss2_tX_test, index2, ss3_tX_test, index3 = split_subsets_test(tX_test, labels_feature)
-
+ss0_tX_test, index0, ss1_tX_test, index1, ss2_tX_test, index2, ss3_tX_test, index3, labels_feat = split_subsets_test(tX_test, labels_feature)
 
 #%%
 
 #Build the model
-ss0_tX_test = build_poly(ss0_tX_test, final_degree)
-ss1_tX_test = build_poly(ss1_tX_test, final_degree)
-ss2_tX_test = build_poly(ss2_tX_test, final_degree)
-ss3_tX_test = build_poly(ss3_tX_test, final_degree)
+ss0_tX_test,_,_ = feature_processing (ss0_tX_test, ss0_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median0)
+ss1_tX_test,_,_ = feature_processing (ss1_tX_test, ss1_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median1)
+ss2_tX_test,_,_ = feature_processing (ss2_tX_test, ss2_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median2)
+ss3_tX_test,_,_ = feature_processing (ss3_tX_test, ss3_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median3)
 
+
+ss0_tX_test_aug, _ = feat_augmentation(ss0_tX_test, 0.003, False, index_0)
+ss1_tX_test_aug, _ = feat_augmentation(ss1_tX_test, 0.003, False, index_1)
+ss2_tX_test_aug, _ = feat_augmentation(ss2_tX_test, 0.003, False, index_2)
+ss3_tX_test_aug, _ = feat_augmentation(ss3_tX_test, 0.003, False, index_3)
+
+ss0_tX_test = build_poly(ss0_tX_test, final_degree[0], feature_augmentation=True, tx_aug=ss0_tX_test_aug)
+ss1_tX_test = build_poly(ss1_tX_test, final_degree[1], feature_augmentation=True, tx_aug=ss1_tX_test_aug)
+ss2_tX_test = build_poly(ss2_tX_test, final_degree[2], feature_augmentation=True, tx_aug=ss2_tX_test_aug)
+ss3_tX_test = build_poly(ss3_tX_test, final_degree[3], feature_augmentation=True, tx_aug=ss3_tX_test_aug)
 
 # standardize test data
 ss0_tX_test, _, _ = standardize(ss0_tX_test, mean0, std0)
@@ -114,7 +133,9 @@ y_pred[index1] = np.squeeze(y_pred1)
 y_pred[index2] = np.squeeze(y_pred2)
 y_pred[index3] = np.squeeze(y_pred3)
 
+#print(accuracy(y,y_pred))
+
 #%%
-OUTPUT_PATH = os.path.dirname(os.getcwd()) + '\\data\\Buzz.csv'
+OUTPUT_PATH = os.path.dirname(os.getcwd()) + '/data/BuzzLastyear.csv'
 create_csv_submission(ids_test, y_pred, OUTPUT_PATH)
 

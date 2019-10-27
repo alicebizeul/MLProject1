@@ -194,9 +194,11 @@ def feature_processing(ss_tX, ss_y,replace_method, replace_feature = True, suppr
     
     return ss_tX, ss_y, methode_computed
 
-def build_poly(tx, degree):
+def build_poly(tx, degree, feature_augmentation=False, tx_aug=[]):
     """Creation of feature matrix with vector of ones + features vector using the appropriate degree given by the argument"""
     tx_new = np.ones(tx.shape[0])
+    if feature_augmentation:
+        tx_new=np.c_[tx_new, tx_aug]
     for i in range(1,degree+1):
         tx_new = np.c_[tx_new,tx**i]
     return tx_new
@@ -406,7 +408,7 @@ def build_k_indices(y, k_fold, seed):
     k_indices = [indices[k * interval: (k + 1) * interval] for k in range(k_fold)]
     return np.array(k_indices)
 
-def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
+def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentation, hyperparams):
     """return the loss of ridge regression."""
     # get k'th subgroup in test, others in train
     te_indice = k_indices[k]
@@ -418,13 +420,19 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     x_te = x[te_indice]
     x_tr = x[tr_indice]
     
-    x_tr, y_tr, median = feature_processing (x_tr, y_tr, 'median', replace_feature = True, suppr_outliers = hyperparams[-1], threshold = 3, ref_median=[])
-    x_te, y_te, _= feature_processing (x_te, y_te, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median)
+    x_tr, y_tr, median = feature_processing (x_tr, y_tr, 'mean', replace_feature = True, suppr_outliers = hyperparams[-1], threshold = 3, ref_median=[])
+    x_te, y_te, _= feature_processing (x_te, y_te, 'mean', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median)
+    
+    
+    tx_tr_aug = []
+    tx_te_aug = []
+    if feature_augmentation:
+        tx_tr_aug, index = feat_augmentation(x_tr, 0.003)
+        tx_te_aug, _ = feat_augmentation(x_te, 0.003, False, index)
     
     # form data with polynomial degree
-    tx_tr = build_poly(x_tr, degree)
-    tx_te = build_poly(x_te, degree)
-        
+    tx_tr = build_poly(x_tr, degree, feature_augmentation, tx_tr_aug)
+    tx_te = build_poly(x_te, degree, feature_augmentation, tx_te_aug)
     tx_tr, mean, std = standardize(tx_tr)
     tx_te, _, _ = standardize(tx_te, mean, std)
     
@@ -436,7 +444,7 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     elif method == 'lsGD': w = least_squares_GD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # gradient descent
     elif method == 'lsSGD': w = least_squares_SGD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2], hyperparams[3]) # stoch GD
     elif method == 'log': w = logistic_regression(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # logistic reg
-    elif method == 'rlog': w =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], hyperparams[0], hyperparams[1], hyperparams[2]) # regularised logistic reg
+    elif method == 'rlog': w =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], np.zeros(tx_tr.shape[1]), hyperparams[1], hyperparams[2]) # regularised logistic reg
     else: raise NotImplemented
     
    
@@ -458,7 +466,7 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     return loss_tr, loss_te, w, acc
      
     
-def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr',hyperparams=[]):
+def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
     
     if class_distribution == True : y, x = equal_class(y,x)
     k_indices = build_k_indices(y, k_fold, seed)
@@ -466,14 +474,15 @@ def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = F
     verify_proportion(y,k_indices)
     
     # cross validation
-    loss_tr, loss_te, w, accuracy = choose_method(y, x, degree, seed, k_fold, k_indices, error, method, hyperparams)
+    loss_tr, loss_te, w, accuracy = choose_method(y, x, degree, seed, k_fold, k_indices, error, method, feature_augmentation, hyperparams)
     
         
     #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER    
     return loss_tr, loss_te, w, accuracy
 
-def cross_validation_demo_featselect(y, x, ranked_index, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr',hyperparams=[]):
+def cross_validation_demo_featselect(y, x, labels, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
     
+    ranked_index=compute_correlations(x, y, labels, plot=False)
     x = np.fliplr(x[:,ranked_index])
     
     if class_distribution == True : y, x = equal_class(y,x)
@@ -490,7 +499,7 @@ def cross_validation_demo_featselect(y, x, ranked_index, degree, seed, k_fold = 
     for feat in range(1,x.shape[1]+1):
         x_croped = x[:,:feat]
         print('Number of best features tested : {}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'.format(x_croped.shape[1]))
-        loss_tr_tmp, loss_te_tmp, w_tmp, accuracy_tmp = choose_method(y, x_croped, degree, seed, k_fold, k_indices, error, method, hyperparams)
+        loss_tr_tmp, loss_te_tmp, w_tmp, accuracy_tmp = choose_method(y, x_croped, degree, seed, k_fold, k_indices, error, method, feature_augmentation, hyperparams)
         loss_tr.append(loss_tr_tmp)
         loss_te.append(loss_te_tmp)
         w.append(w_tmp)
@@ -501,30 +510,32 @@ def cross_validation_demo_featselect(y, x, ranked_index, degree, seed, k_fold = 
     return loss_tr, loss_te, w, accuracy
 
 
-def feat_augmentation(tx, threshold):
+
+def feat_augmentation(tx, threshold, train_set=True, index=[]):
     
-    corr_matrix = np.corrcoef(tx.T)
-    index = np.argwhere(corr_matrix < threshold) #set threshold as an argument
+    if train_set:
+        corr_matrix = np.corrcoef(tx.T)
+        index = np.argwhere(corr_matrix < threshold) #set threshold as an argument
     
     final_index = []
     for i in range(index.shape[0]):
         if index[i, 0] != index[i, 1]:
             final_index.append(index[i,:])
-     
-    final_index = np.sort(final_index, axis=1) 
-    final_index = np.unique(final_index, axis=0)
+            
+    if len(final_index)>0: 
+        final_index = np.sort(final_index, axis=1) 
+        final_index = np.unique(final_index, axis=0)
 
-    for i in range(final_index.shape[0]):
-        feat1  = tx[:,final_index[i][0]]
-        feat2  = tx[:,final_index[i][1]]
-        tx = np.c_[tx, np.multiply(feat1,feat2)]
-
+        for i in range(final_index.shape[0]):
+            feat1  = tx[:,final_index[i][0]]
+            feat2  = tx[:,final_index[i][1]]
+            tx = np.c_[tx, np.multiply(feat1,feat2)]
 
     
-    return tx
+    return tx, index
 
 
-def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class', method='rr',hyperparams=[]):
+def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
     
     loss_tr = []
     loss_te = []
@@ -534,34 +545,34 @@ def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class'
     
     if method == 'rr':
         for lambda_ in hyperparams[0]:
-            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp  = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[lambda_])
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp  = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation, [lambda_])
             loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
             accuracy.append(acc_tmp)
             w.append(w_tmp)
     elif method == 'ls':
-        loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp= single_cross_val(y, x, degree, k_fold, k_indices, method,error)
+        loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp= single_cross_val(y, x, degree, k_fold, k_indices, method,error, feature_augmentation)
         loss_tr.append(concate_fold(loss_tr_tmp))
         loss_te.append(concate_fold(loss_te_tmp))
         accuracy.append(acc_tmp)
         w.append(w_tmp)
     elif method =='lsGD':
         for gamma in hyperparams[2]:
-            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error, [hyperparams[0],hyperparams[1],gamma])
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error, feature_augmentation, [hyperparams[0],hyperparams[1],gamma])
             loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
             accuracy.append(acc_tmp)
             w.append(w_tmp)
     elif method =='lsSGD':
         for gamma in hyperparams[2]:
-            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma,hyperparams[3]])
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation,[hyperparams[0],hyperparams[1],gamma,hyperparams[3]])
             loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
             accuracy.append(acc_tmp)
             w.append(w_tmp)
     elif method == 'log':
         for gamma in hyperparams[2]:
-            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma])
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation, [hyperparams[0],hyperparams[1],gamma])
             loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
             accuracy.append(acc_tmp)
@@ -569,7 +580,7 @@ def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class'
     elif method == 'rlog':
         for lambda_ in hyperparams[3]:
             for gamma in hyperparams[2]:
-                loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,[hyperparams[0],hyperparams[1],gamma,lambda_])
+                loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation, [hyperparams[0],hyperparams[1],gamma,lambda_])
             loss_tr.append(concate_fold(loss_tr_tmp))
             loss_te.append(concate_fold(loss_te_tmp))
             accuracy.append(acc_tmp)
@@ -579,19 +590,23 @@ def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class'
  
 
           
-def single_cross_val(y, x, degree, k_fold, k_indices, method, error, hyperparams = []):
+def single_cross_val(y, x, degree, k_fold, k_indices, method, error, feature_augmentation=False, hyperparams = []):
     loss_tr_tmp = []
     loss_te_tmp = []
     w_tmp = []
     accuracy = []
     
     for k in range(k_fold):
-        loss_tr, loss_te, w , acc = cross_validation(y, x, degree, k, k_indices, method, error, hyperparams)
+        loss_tr, loss_te, w , acc = cross_validation(y, x, degree, k, k_indices, method, error, feature_augmentation, hyperparams)
         loss_tr_tmp.append(loss_tr)
         loss_te_tmp.append(loss_te)    
         w_tmp.append(w)
         accuracy.append(acc)
-    w_mean = np.mean(w_tmp,axis=0)
+    
+    if not feature_augmentation:
+        w_mean = np.mean(w_tmp,axis=0)
+    else : 
+        w_mean=[]
     #print("Accuracy = {}".format(accuracy))
     return loss_tr_tmp, loss_te_tmp, w_mean, accuracy
 
@@ -690,6 +705,49 @@ def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png", t
     # Rank feature importance based on correlation with output
     correlation_output = np.abs(correlation_output)
     ranked_index = correlation_output.argsort()
+    #ranked_features = [labels[i] for i in ranked_index]
+    print("Ranked absolute correlation with output: ", np.sort(correlation_output))
+    #print("Ranked features: ", ranked_features)
+
+    if print_correlated_pairs:
+        #Print pairs of features highly correlated (above threshold)
+        index = np.argwhere(correlation_features > threshold)
+        final_index = []
+        for i in range(index.shape[0]):
+            if index[i, 0] != index[i, 1]:
+                final_index.append(index[i,:])
+         
+        final_index = np.sort(final_index, axis=1) 
+        final_index = np.unique(final_index, axis=0)
+        
+        print("\n Highly correlated features (correlation above {}) : {} ".format(threshold,labels[final_index]))
+        print("Index: ", final_index)
+        
+    return ranked_index
+
+def compute_correlations(tX, y, labels, threshold=0.85, print_correlated_pairs=False, plot=False):
+    """Computes and plots a heatmap of the correlation matrix. This matrix comprises the Pearson correlation
+    coefficients between (continuous) features and the Point-biserial coefficients between each feature and 
+    the (categorical) output."""
+    
+    correlation_output = [cal_point_biserial_correlation(tX[:,i], y) for i in range(tX.shape[1])]
+    correlation_features = np.corrcoef(tX.T) 
+    corr_matrix = np.c_[correlation_features, correlation_output]
+    
+    # Plot
+    if plot:
+        figure = plt.figure(figsize=(20,20))
+        ax = figure.add_subplot(111)
+        cax = ax.matshow(corr_matrix, cmap=plt.cm.PuOr)
+        figure.colorbar(cax)
+        plt.xticks(range(len(labels)), labels, rotation=90)
+        plt.yticks(range(len(labels)-1), labels[:-1])
+        plt.tight_layout()
+        plt.show()
+    
+    # Rank feature importance based on correlation with output
+    correlation_output = np.abs(correlation_output)
+    ranked_index = correlation_output.argsort()
     ranked_features = [labels[i] for i in ranked_index]
     print("Ranked absolute correlation with output: ", np.sort(correlation_output))
     print("Ranked features: ", ranked_features)
@@ -708,7 +766,7 @@ def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png", t
         print("\n Highly correlated features (correlation above {}) : {} ".format(threshold,labels[final_index]))
         print("Index: ", final_index)
         
-    return ranked_index, ranked_features
+    return ranked_index
 
 def cal_point_biserial_correlation(x, y):
     """ Computes the point-biserial correlation coefficient between a continuous variable x

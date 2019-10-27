@@ -194,21 +194,12 @@ def feature_processing(ss_tX, ss_y,replace_method, replace_feature = True, suppr
     
     return ss_tX, ss_y, methode_computed
 
-
-def build_model_data(features, label):
-    """Form (y,tX) to get regression data in matrix form."""
-    y = label
-    x = features
-    num_samples = x.shape[0]
-    tx = np.column_stack((x, np.ones(num_samples, dtype=x.dtype)))
-    return y, tx
-
-def build_poly(x, degree):
-    """polynomial basis functions for input data x, for j=0 up to j=degree."""
-    tx = np.ones(x.shape[0])
+def build_poly(tx, degree):
+    """Creation of feature matrix with vector of ones + features vector using the appropriate degree given by the argument"""
+    tx_new = np.ones(tx.shape[0])
     for i in range(1,degree+1):
-        tx = np.c_[tx,x**i]
-    return tx
+        tx_new = np.c_[tx_new,tx**i]
+    return tx_new
 
 def standardize(tx , mean = [], std = []):
     if mean == [] and std == []:
@@ -263,13 +254,13 @@ def cal_error(y, y_pred):
     """ Returns vector of 0,2 or -2, the difference between vector of labels and vector of predicted labels"""
     return y - y_pred
     
-def cal_mse(e):
+def cal_mse(error):
     """Returns the mean square error for vector e."""
-    return 1/2*np.mean(e**2)
+    return 1/2*np.mean(error**2)
 
-def cal_rmse(e):
+def cal_rmse(error):
     """Returns the root mean square error using the mean square error as input """
-    return np.sqrt(2*cal_mse(e))
+    return np.sqrt(2*cal_mse(error))
 
 def cal_classerror(y,y_pred):
     """Returns the class error (percentage of fails) which takes 
@@ -353,23 +344,19 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
     return w
 
 def least_squares(y, tx):
-    """calculate the least squares solution."""
-    a = tx.T.dot(tx)
-    b = tx.T.dot(y)
-    w = np.linalg.solve(a, b)
+    """Least squares optimisation. Returns the optimal weights vector"""
+    weights = np.linalg.solve(tx.T.dot(tx), tx.T.dot(y))
     
-    print("Least squares: w={}".format(w))
-    return w
+    print("Least squares: w={}".format(weights))
+    return weights
 
 def ridge_regression(y, tx, lambda_):
-    """regularisation"""
+    """Least squares with regularisation. Returns optimal weight vector"""
     aI = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
-    a = tx.T.dot(tx) + aI
-    b = tx.T.dot(y)
-    w = np.linalg.solve(a, b)
+    weights = np.linalg.solve(tx.T.dot(tx) + aI, tx.T.dot(y))
     
     #print("Ridge regression: w={}".format(w))
-    return w
+    return weights
 
 
 def sigmoid(t):
@@ -411,7 +398,7 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
 # Cross val
 
 def build_k_indices(y, k_fold, seed):
-    """build k indices for k-fold."""
+    """Create the k-folds"""
     num_row = y.shape[0]
     interval = int(num_row / k_fold)
     np.random.seed(seed)
@@ -431,6 +418,8 @@ def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
     x_te = x[te_indice]
     x_tr = x[tr_indice]
     
+    x_tr, y_tr, median = feature_processing (x_tr, y_tr, 'median', replace_feature = True, suppr_outliers = hyperparams[-1], threshold = 3, ref_median=[])
+    x_te, y_te, _= feature_processing (x_te, y_te, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median)
     
     # form data with polynomial degree
     tx_tr = build_poly(x_tr, degree)

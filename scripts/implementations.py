@@ -11,7 +11,9 @@ from proj1_helpers import *
 import matplotlib.pyplot as plt
 
 
+# =============================================================================
 # Creation of feature matrix 
+# =============================================================================
 
 def split_subsets(tX, y, labels_feat):
     # Splitting the dataset based on the value of PRI_jet_num
@@ -226,7 +228,9 @@ def batch_iter(y, tx, batch_size, num_batches=1):
         if start_index != end_index:
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
 
+# =============================================================================
 # Loss measurement 
+# =============================================================================
 
 def predict_labels(weights, data):
     """Generates class predictions given weights, and a test data matrix"""
@@ -267,7 +271,6 @@ def cal_classerror(y,y_pred):
     reequilibrates class distribution into acount"""
     class1 = np.sum(y_pred[y ==1] != 1)/np.sum(y == 1)
     class2 = np.sum(y_pred[y == -1] != -1)/np.sum(y == -1)
-    
     return 0.5*(class1 + class2)
 
 def cal_classificationerror(y, y_pred):
@@ -295,15 +298,17 @@ def cal_loglike(y, tx, w): # A MODIFIER !!!
     epsilon = 0
     if len(sigmo[(1-sigmo)==0]) > 0 or len(sigmo[sigmo==0])> 0:
         epsilon = 1e-9
-
     loss = y.T.dot(np.log(sigmo+epsilon)) + (1 - y).T.dot(np.log(1 - sigmo+epsilon))
     return np.squeeze(-loss)
 
 def cal_loglike_r(y, tx, w, lambda_):
      return cal_loglike(y, tx, w) + lambda_ * np.squeeze(w.T.dot(w))
 
+ 
+# =============================================================================
 # Optimisation Methods 
-
+# =============================================================================
+     
 def compute_gradient(y, tx, w):
     """Compute the gradient."""
     err = y - tx.dot(w)
@@ -326,7 +331,6 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
     """Stochastic gradient descent."""
     # Define parameters to store w and loss
-
     w = initial_w
 
     for n_iter in range(max_iters):
@@ -340,39 +344,32 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
         #print("SGD({bi}/{ti}): loss={l}".format(
         #      bi=n_iter, ti=max_iters - 1, l=loss))
     print("SGD(gamma = {gamma},{ti}): w={weight}".format(gamma=gamma,ti=max_iters - 1,weight=w))
-    
     return w
 
 def least_squares(y, tx):
     """Least squares optimisation. Returns the optimal weights vector"""
     weights = np.linalg.solve(tx.T.dot(tx), tx.T.dot(y))
-    
-    print("Least squares: w={}".format(weights))
+    #print("Least squares: w={}".format(weights))
     return weights
 
 def ridge_regression(y, tx, lambda_):
     """Least squares with regularisation. Returns optimal weight vector"""
     aI = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
     weights = np.linalg.solve(tx.T.dot(tx) + aI, tx.T.dot(y))
-    
     #print("Ridge regression: w={}".format(w))
     return weights
 
-
-def sigmoid(t):
-    return 1.0 / (1 + np.exp(-t))
-
+def sigmoid(z):
+    return np.exp(z) / (1 + np.exp(z))
 
 def compute_logistic_gradient(y, tx, w):
     """compute the gradient of loss."""
-    pred = sigmoid(tx.dot(w))
-    grad = tx.T.dot(pred - y)
-    return grad
+    sigmo = sigmoid(tx.dot(w))
+    return tx.T.dot(sigmo - y)
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """Logistic regression with Gradient descent algorithm."""
     w = initial_w
-    
     for n_iter in range(max_iters):
         # compute loss, gradient
         grad = compute_logistic_gradient(y, tx, w)
@@ -384,9 +381,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Regularized logistic regression with Gradient descent algorithm."""
-    
     w = initial_w
-    
     for n_iter in range(max_iters):
         #loss = compute_logistic_loss(y, tx, w) + lambda_ * np.squeeze(w.T.dot(w))
         gradient = compute_logistic_gradient(y, tx, w) + 2 * lambda_ * w
@@ -395,7 +390,9 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     print("Regularized logistic regression (lambda = {lamb},{ti}) : w={weights}".format(lamb = lambda_, ti=max_iters - 1,weights =w))   
     return w
 
-# Cross val
+# =============================================================================
+# Cross validation
+# =============================================================================
 
 def build_k_indices(y, k_fold, seed):
     """Create the k-folds"""
@@ -406,58 +403,7 @@ def build_k_indices(y, k_fold, seed):
     k_indices = [indices[k * interval: (k + 1) * interval] for k in range(k_fold)]
     return np.array(k_indices)
 
-def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
-    """return the loss of ridge regression."""
-    # get k'th subgroup in test, others in train
-    te_indice = k_indices[k]
-    tr_indice = k_indices[~(np.arange(k_indices.shape[0]) == k)]
-    tr_indice = tr_indice.reshape(-1)
-    
-    y_te = y[te_indice]
-    y_tr = y[tr_indice]
-    x_te = x[te_indice]
-    x_tr = x[tr_indice]
-    
-    x_tr, y_tr, median = feature_processing (x_tr, y_tr, 'median', replace_feature = True, suppr_outliers = hyperparams[-1], threshold = 3, ref_median=[])
-    x_te, y_te, _= feature_processing (x_te, y_te, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median)
-    
-    # form data with polynomial degree
-    tx_tr = build_poly(x_tr, degree)
-    tx_te = build_poly(x_te, degree)
-        
-    tx_tr, mean, std = standardize(tx_tr)
-    tx_te, _, _ = standardize(tx_te, mean, std)
-    
-    #print('Mean and std of each feature in train set: {} , {}'.format(tx_tr.mean(axis = 0),tx_tr.std(axis = 0)))
-    #print('Mean and std of each feature in test set: {} , {}'.format(tx_te.mean(axis = 0),tx_te.std(axis = 0)))
-    
-    if method == 'rr': w = ridge_regression(y_tr, tx_tr, hyperparams[0]) # ridge regression
-    elif method == 'ls': w = least_squares(y_tr, tx_tr) # least square
-    elif method == 'lsGD': w = least_squares_GD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # gradient descent
-    elif method == 'lsSGD': w = least_squares_SGD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2], hyperparams[3]) # stoch GD
-    elif method == 'log': w = logistic_regression(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # logistic reg
-    elif method == 'rlog': w =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], hyperparams[0], hyperparams[1], hyperparams[2]) # regularised logistic reg
-    else: raise NotImplemented
-    
-   
-    if method == 'log':
-        loss_tr = cal_loglike(y_tr, tx_tr, w)
-        loss_te = cal_loglike(y_te, tx_te, w)
-    elif method == 'rlog': # A REVOIR SI CEST BON !!!!
-        loss_tr = cal_loglike_r(y_tr, tx_tr, w, hyperparams[3])
-        loss_te = cal_loglike_r(y_te, tx_te, w, hyperparams[3])
-    else :
-        # calculate the loss for train and test data
-        loss_tr = compute_loss(y_tr, tx_tr, w, error)
-        loss_te = compute_loss(y_te, tx_te, w, error)      
-    
-    
-    y_pred = predict_labels(np.array(w).T, tx_te)
-    acc = accuracy(y_te,y_pred)
-    
-    return loss_tr, loss_te, w, acc
-     
-    
+
 def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr',hyperparams=[]):
     
     if class_distribution == True : y, x = equal_class(y,x)
@@ -467,61 +413,9 @@ def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = F
     
     # cross validation
     loss_tr, loss_te, w, accuracy = choose_method(y, x, degree, seed, k_fold, k_indices, error, method, hyperparams)
-    
         
     #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER    
     return loss_tr, loss_te, w, accuracy
-
-def cross_validation_demo_featselect(y, x, ranked_index, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr',hyperparams=[]):
-    
-    x = np.fliplr(x[:,ranked_index])
-    
-    if class_distribution == True : y, x = equal_class(y,x)
-    k_indices = build_k_indices(y, k_fold, seed)
-           
-    verify_proportion(y,k_indices)
-    
-    loss_tr = []
-    loss_te = []
-    w = []
-    accuracy = []
-    
-    # cross validation
-    for feat in range(1,x.shape[1]+1):
-        x_croped = x[:,:feat]
-        print('Number of best features tested : {}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'.format(x_croped.shape[1]))
-        loss_tr_tmp, loss_te_tmp, w_tmp, accuracy_tmp = choose_method(y, x_croped, degree, seed, k_fold, k_indices, error, method, hyperparams)
-        loss_tr.append(loss_tr_tmp)
-        loss_te.append(loss_te_tmp)
-        w.append(w_tmp)
-        accuracy.append(accuracy_tmp)
-            
-    
-    #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER    
-    return loss_tr, loss_te, w, accuracy
-
-
-def feat_augmentation(tx, threshold):
-    
-    corr_matrix = np.corrcoef(tx.T)
-    index = np.argwhere(corr_matrix < threshold) #set threshold as an argument
-    
-    final_index = []
-    for i in range(index.shape[0]):
-        if index[i, 0] != index[i, 1]:
-            final_index.append(index[i,:])
-     
-    final_index = np.sort(final_index, axis=1) 
-    final_index = np.unique(final_index, axis=0)
-
-    for i in range(final_index.shape[0]):
-        feat1  = tx[:,final_index[i][0]]
-        feat2  = tx[:,final_index[i][1]]
-        tx = np.c_[tx, np.multiply(feat1,feat2)]
-
-
-    
-    return tx
 
 
 def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class', method='rr',hyperparams=[]):
@@ -540,7 +434,7 @@ def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class'
             accuracy.append(acc_tmp)
             w.append(w_tmp)
     elif method == 'ls':
-        loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp= single_cross_val(y, x, degree, k_fold, k_indices, method,error)
+        loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp= single_cross_val(y, x, degree, k_fold, k_indices, method,error,hyperparams)
         loss_tr.append(concate_fold(loss_tr_tmp))
         loss_te.append(concate_fold(loss_te_tmp))
         accuracy.append(acc_tmp)
@@ -576,9 +470,8 @@ def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class'
             w.append(w_tmp)
     else: raise NotImplemented 
     return loss_tr, loss_te, w, accuracy
- 
 
-          
+
 def single_cross_val(y, x, degree, k_fold, k_indices, method, error, hyperparams = []):
     loss_tr_tmp = []
     loss_te_tmp = []
@@ -595,6 +488,106 @@ def single_cross_val(y, x, degree, k_fold, k_indices, method, error, hyperparams
     #print("Accuracy = {}".format(accuracy))
     return loss_tr_tmp, loss_te_tmp, w_mean, accuracy
 
+
+def cross_validation(y, x, degree, k, k_indices,method, error, hyperparams):
+    """return the loss of ridge regression."""
+    # get k'th subgroup in test, others in train
+    te_indice = k_indices[k]
+    tr_indice = k_indices[~(np.arange(k_indices.shape[0]) == k)]
+    tr_indice = tr_indice.reshape(-1)
+    
+    y_te = y[te_indice]
+    y_tr = y[tr_indice]
+    x_te = x[te_indice]
+    x_tr = x[tr_indice]
+    
+    x_tr, y_tr, median = feature_processing (x_tr, y_tr, 'median', replace_feature = True, suppr_outliers = hyperparams[-1], threshold = 3, ref_median=[])
+    x_te, y_te, _= feature_processing (x_te, y_te, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median)
+    
+    # form data with polynomial degree
+    tx_tr = build_poly(x_tr, degree)
+    tx_te = build_poly(x_te, degree)
+        
+    tx_tr, mean, std = standardize(tx_tr)
+    tx_te, _, _ = standardize(tx_te, mean, std)
+    
+    #print('Mean and std of each feature in train set: {} , {}'.format(tx_tr.mean(axis = 0),tx_tr.std(axis = 0)))
+    #print('Mean and std of each feature in test set: {} , {}'.format(tx_te.mean(axis = 0),tx_te.std(axis = 0)))
+    
+    if method == 'rr': w = ridge_regression(y_tr, tx_tr, hyperparams[0]) # ridge regression
+    elif method == 'ls': w = least_squares(y_tr, tx_tr) # least square
+    elif method == 'lsGD': w = least_squares_GD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # gradient descent
+    elif method == 'lsSGD': w = least_squares_SGD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2], hyperparams[3]) # stoch GD
+    elif method == 'log': w = logistic_regression(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # logistic reg
+    elif method == 'rlog': w =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], hyperparams[0], hyperparams[1], hyperparams[2]) # regularised logistic reg
+    else: raise NotImplemented
+   
+    if method == 'log':
+        loss_tr = cal_loglike(y_tr, tx_tr, w)
+        loss_te = cal_loglike(y_te, tx_te, w)
+    elif method == 'rlog': # A REVOIR SI CEST BON !!!!
+        loss_tr = cal_loglike_r(y_tr, tx_tr, w, hyperparams[3])
+        loss_te = cal_loglike_r(y_te, tx_te, w, hyperparams[3])
+    else :
+        # calculate the loss for train and test data
+        loss_tr = compute_loss(y_tr, tx_tr, w, error)
+        loss_te = compute_loss(y_te, tx_te, w, error)      
+    
+    y_pred = predict_labels(np.array(w).T, tx_te)
+    acc = accuracy(y_te,y_pred)
+    
+    return loss_tr, loss_te, w, acc
+     
+
+def cross_validation_demo_featselect(y, x, ranked_index, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr',hyperparams=[]):
+    
+    x = np.fliplr(x[:,ranked_index])
+    
+    if class_distribution == True : y, x = equal_class(y,x)
+    k_indices = build_k_indices(y, k_fold, seed)
+           
+    verify_proportion(y,k_indices)
+    
+    loss_tr = []
+    loss_te = []
+    w = []
+    accuracy = []
+    
+    # cross validation
+    for feat in range(1,x.shape[1]+1):
+        x_croped = x[:,:feat]
+        print('Number of best features tested : {}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'.format(x_croped.shape[1]))
+        loss_tr_tmp, loss_te_tmp, w_tmp, accuracy_tmp = choose_method(y, x_croped, degree, seed, k_fold, k_indices, error, method, hyperparams)
+        loss_tr.append(loss_tr_tmp)
+        loss_te.append(loss_te_tmp)
+        w.append(w_tmp)
+        accuracy.append(accuracy_tmp)
+            
+    #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER    
+    return loss_tr, loss_te, w, accuracy
+
+
+def feat_augmentation(tx, threshold):
+    
+    corr_matrix = np.corrcoef(tx.T)
+    index = np.argwhere(corr_matrix < threshold) #set threshold as an argument
+    
+    final_index = []
+    for i in range(index.shape[0]):
+        if index[i, 0] != index[i, 1]:
+            final_index.append(index[i,:])
+     
+    final_index = np.sort(final_index, axis=1) 
+    final_index = np.unique(final_index, axis=0)
+
+    for i in range(final_index.shape[0]):
+        feat1  = tx[:,final_index[i][0]]
+        feat2  = tx[:,final_index[i][1]]
+        tx = np.c_[tx, np.multiply(feat1,feat2)]
+    
+    return tx
+
+
 def equal_class(y,x):
     y_class0 = y[y==-1]
     y_class1 = y[y==1]
@@ -604,10 +597,12 @@ def equal_class(y,x):
         
     to_keep = np.random.permutation(len(y_class0))[:(len(y_class1)-1)]
     return  np.concatenate((y_class0[to_keep],y_class1),axis = 0), np.concatenate((x_class0[to_keep][:],x_class1),axis = 0)
-          
+      
+    
 def concate_fold(array_loss):
       #return np.mean(array_loss)
         return array_loss
+    
     
 def verify_proportion(y,k_indices):
     print('Number of remaining samples before start cross val : {}'.format(len(y)))
@@ -615,18 +610,20 @@ def verify_proportion(y,k_indices):
     print("Proportion of Bosons in test fold 1: {} %".format(100*len(y[k_indices[0]][y[k_indices[0]]==1])/len(y[k_indices[0]])))
     
 
+# =============================================================================
 # Visualisation methods 
+# =============================================================================
 
 def histo_visualization(feature_0,feature_1,index,std_number):
     fig, axes = plt.subplots(1, 2, figsize=(16, 4))
-    
+    # plot 1
     title_0 = 'Distribution of the features N°' + str(index+1)
     axes[0].set_title(title_0)
     axes[0].hist(feature_0,bins=100)
     axes[0].axvline(np.mean(feature_0), color='k', linewidth=1)
     axes[0].axvline( (std_number*np.std(feature_0)) + np.mean(feature_0), color='r', linestyle='dashed', linewidth=1)
     axes[0].axvline( (-std_number*np.std(feature_0)) + np.mean(feature_0), color='r', linestyle='dashed', linewidth=1)
-    
+    # plot 2
     title_1 = 'Distribution of the features N°' + str(index+2)
     axes[1].set_title(title_1)
     axes[1].hist(feature_1,bins=100)
@@ -634,24 +631,22 @@ def histo_visualization(feature_0,feature_1,index,std_number):
     axes[1].axvline( (std_number*np.std(feature_1)) + np.mean(feature_1), color='r', linestyle='dashed', linewidth=1)
     axes[1].axvline( (-std_number*np.std(feature_1)) + np.mean(feature_1), color='r', linestyle='dashed', linewidth=1)
     plt.show()
+    
 
 def scatter_visualization(label, feature_1,feature_2,index):
     fig = plt.figure()
-   
     # plot 1
     ax1 = fig.add_subplot(1, 3, 1)
     ax1.scatter(feature_1,label, marker=".", color='b', s=5)
     ax1.set_ylabel("Boson")
     ax1.set_xlabel("feature N°" + str(index+1))
     ax1.grid()
-
     # plot 2
     ax2 = fig.add_subplot(1, 3, 2)
     ax2.scatter(feature_2, label, marker=".", color='b', s=5)
     ax2.set_ylabel("Boson")
     ax2.set_xlabel("feature N°" + str(index+2))
     ax2.grid()
-
     return fig
           
 
@@ -709,6 +704,7 @@ def plot_correlation_matrix(tX, y, labels, figureName="CorrelationMatrix.png", t
         print("Index: ", final_index)
         
     return ranked_index, ranked_features
+
 
 def cal_point_biserial_correlation(x, y):
     """ Computes the point-biserial correlation coefficient between a continuous variable x

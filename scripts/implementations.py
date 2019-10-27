@@ -284,23 +284,13 @@ def accuracy(y,y_pred):
     """ Returns accuracy of classification = percentage of success"""
     return np.sum(y == y_pred)/len(y)
 
-"""
 def cal_loglike(y, tx, w):
-    compute the cost by negative log likelihood.
-    pred = sigmoid(tx.dot(w))
-    loss = y.T.dot(np.log(pred)) + (1 - y).T.dot(np.log(1 - pred))
-    return np.squeeze(- loss)
-"""
-
-def cal_loglike(y, tx, w): # A MODIFIER !!!
-    """Compute the cost by negative log likelihood."""
-    sigmo = sigmoid(tx.dot(w))
-
-    #avoid issues zero log
-    epsilon = 0
-    if len(sigmo[(1-sigmo)==0]) > 0 or len(sigmo[sigmo==0])> 0:
-        epsilon = 1e-9
-    loss = y.T.dot(np.log(sigmo+epsilon)) + (1 - y).T.dot(np.log(1 - sigmo+epsilon))
+    """Compute the cost by negative log likelihood"""
+    delta = 0
+    sigmoid_fct = sigmoid(tx.dot(w))
+    if len(sigmoid_fct[sigmoid_fct==0])> 0 or len(sigmoid_fct[(1-sigmoid_fct)==0]) > 0:
+        delta = 0.0000000001
+    loss = y.T.dot(np.log(sigmoid_fct+delta)) + (1 - y).T.dot(np.log(1 - sigmoid_fct+delta))
     return np.squeeze(-loss)
 
 def cal_loglike_r(y, tx, w, lambda_):
@@ -342,7 +332,6 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
                 grad, _ = compute_gradient(y_batch, tx_batch, w)
                 # update w through the stochastic gradient update
                 w = w - gamma * grad
-
         #print("SGD({bi}/{ti}): loss={l}".format(
         #      bi=n_iter, ti=max_iters - 1, l=loss))
     print("SGD(gamma = {gamma},{ti}): w={weight}".format(gamma=gamma,ti=max_iters - 1,weight=w))
@@ -405,6 +394,94 @@ def build_k_indices(y, k_fold, seed):
     k_indices = [indices[k * interval: (k + 1) * interval] for k in range(k_fold)]
     return np.array(k_indices)
 
+def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
+    
+    if class_distribution == True : y, x = equal_class(y,x)
+    k_indices = build_k_indices(y, k_fold, seed)
+           
+    verify_proportion(y,k_indices)
+    
+    # cross validation
+    loss_tr, loss_te, w, accuracy = choose_method(y, x, degree, seed, k_fold, k_indices, error, method, feature_augmentation, hyperparams)
+    
+    return loss_tr, loss_te, w, accuracy
+
+
+def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
+    
+    loss_tr = []
+    loss_te = []
+    
+    w = []
+    accuracy = []
+    
+    if method == 'rr':
+        for lambda_ in hyperparams[0]:
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp  = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation, [lambda_])
+            loss_tr.append(concate_fold(loss_tr_tmp))
+            loss_te.append(concate_fold(loss_te_tmp))
+            accuracy.append(acc_tmp)
+            w.append(w_tmp)
+    elif method == 'ls':
+        loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp= single_cross_val(y, x, degree, k_fold, k_indices, method,error, feature_augmentation)
+        loss_tr.append(concate_fold(loss_tr_tmp))
+        loss_te.append(concate_fold(loss_te_tmp))
+        accuracy.append(acc_tmp)
+        w.append(w_tmp)
+    elif method =='lsGD':
+        for gamma in hyperparams[2]:
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error, feature_augmentation, [hyperparams[0],hyperparams[1],gamma])
+            loss_tr.append(concate_fold(loss_tr_tmp))
+            loss_te.append(concate_fold(loss_te_tmp))
+            accuracy.append(acc_tmp)
+            w.append(w_tmp)
+    elif method =='lsSGD':
+        for gamma in hyperparams[2]:
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation,[hyperparams[0],hyperparams[1],gamma,hyperparams[3]])
+            loss_tr.append(concate_fold(loss_tr_tmp))
+            loss_te.append(concate_fold(loss_te_tmp))
+            accuracy.append(acc_tmp)
+            w.append(w_tmp)
+    elif method == 'log':
+        for gamma in hyperparams[2]:
+            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation, [hyperparams[0],hyperparams[1],gamma])
+            loss_tr.append(concate_fold(loss_tr_tmp))
+            loss_te.append(concate_fold(loss_te_tmp))
+            accuracy.append(acc_tmp)
+            w.append(w_tmp)
+    elif method == 'rlog':
+        for lambda_ in hyperparams[3]:
+            for gamma in hyperparams[2]:
+                loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation, [hyperparams[0],hyperparams[1],gamma,lambda_])
+            loss_tr.append(concate_fold(loss_tr_tmp))
+            loss_te.append(concate_fold(loss_te_tmp))
+            accuracy.append(acc_tmp)
+            w.append(w_tmp)
+    else: raise NotImplemented 
+    return loss_tr, loss_te, w, accuracy
+
+
+def single_cross_val(y, x, degree, k_fold, k_indices, method, error, feature_augmentation=False, hyperparams = []):
+    loss_tr_tmp = []
+    loss_te_tmp = []
+    w_tmp = []
+    accuracy = []
+    
+    for k in range(k_fold):
+        loss_tr, loss_te, w , acc = cross_validation(y, x, degree, k, k_indices, method, error, feature_augmentation, hyperparams)
+        loss_tr_tmp.append(loss_tr)
+        loss_te_tmp.append(loss_te)    
+        w_tmp.append(w)
+        accuracy.append(acc)
+    
+    if not feature_augmentation:
+        w_mean = np.mean(w_tmp,axis=0)
+    else : 
+        w_mean=[]
+    #print("Accuracy = {}".format(accuracy))
+    return loss_tr_tmp, loss_te_tmp, w_mean, accuracy
+
+
 def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentation, hyperparams):
 
     """return the loss of ridge regression."""
@@ -460,19 +537,8 @@ def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentat
     acc = accuracy(y_te,y_pred)
     
     return loss_tr, loss_te, w, acc
-     
-    
-def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
-    
-    if class_distribution == True : y, x = equal_class(y,x)
-    k_indices = build_k_indices(y, k_fold, seed)
-           
-    verify_proportion(y,k_indices)
-    
-    # cross validation
-    loss_tr, loss_te, w, accuracy = choose_method(y, x, degree, seed, k_fold, k_indices, error, method, feature_augmentation, hyperparams)
-    
-    return loss_tr, loss_te, w, accuracy
+
+
 
 
 def cross_validation_demo_featselect(y, x, labels, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
@@ -504,7 +570,6 @@ def cross_validation_demo_featselect(y, x, labels, degree, seed, k_fold = 4, cla
     return loss_tr, loss_te, w, accuracy
 
 
-
 def feat_augmentation(tx, threshold=0.003, train_set=True, index=[]):
     
     if train_set:
@@ -525,84 +590,7 @@ def feat_augmentation(tx, threshold=0.003, train_set=True, index=[]):
             feat2  = tx[:,final_index[i][1]]
             tx = np.c_[tx, np.multiply(feat1,feat2)]
     
-    return tx, index
-
-
-
-def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
-    
-    loss_tr = []
-    loss_te = []
-    
-    w = []
-    accuracy = []
-    
-    if method == 'rr':
-        for lambda_ in hyperparams[0]:
-            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp  = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation, [lambda_])
-            loss_tr.append(concate_fold(loss_tr_tmp))
-            loss_te.append(concate_fold(loss_te_tmp))
-            accuracy.append(acc_tmp)
-            w.append(w_tmp)
-    elif method == 'ls':
-        loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp= single_cross_val(y, x, degree, k_fold, k_indices, method,error, feature_augmentation)
-        loss_tr.append(concate_fold(loss_tr_tmp))
-        loss_te.append(concate_fold(loss_te_tmp))
-        accuracy.append(acc_tmp)
-        w.append(w_tmp)
-    elif method =='lsGD':
-        for gamma in hyperparams[2]:
-            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error, feature_augmentation, [hyperparams[0],hyperparams[1],gamma])
-            loss_tr.append(concate_fold(loss_tr_tmp))
-            loss_te.append(concate_fold(loss_te_tmp))
-            accuracy.append(acc_tmp)
-            w.append(w_tmp)
-    elif method =='lsSGD':
-        for gamma in hyperparams[2]:
-            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation,[hyperparams[0],hyperparams[1],gamma,hyperparams[3]])
-            loss_tr.append(concate_fold(loss_tr_tmp))
-            loss_te.append(concate_fold(loss_te_tmp))
-            accuracy.append(acc_tmp)
-            w.append(w_tmp)
-    elif method == 'log':
-        for gamma in hyperparams[2]:
-            loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation, [hyperparams[0],hyperparams[1],gamma])
-            loss_tr.append(concate_fold(loss_tr_tmp))
-            loss_te.append(concate_fold(loss_te_tmp))
-            accuracy.append(acc_tmp)
-            w.append(w_tmp)
-    elif method == 'rlog':
-        for lambda_ in hyperparams[3]:
-            for gamma in hyperparams[2]:
-                loss_tr_tmp, loss_te_tmp, w_tmp, acc_tmp = single_cross_val(y, x, degree, k_fold, k_indices, method,error,feature_augmentation, [hyperparams[0],hyperparams[1],gamma,lambda_])
-            loss_tr.append(concate_fold(loss_tr_tmp))
-            loss_te.append(concate_fold(loss_te_tmp))
-            accuracy.append(acc_tmp)
-            w.append(w_tmp)
-    else: raise NotImplemented 
-    return loss_tr, loss_te, w, accuracy
- 
-
-          
-def single_cross_val(y, x, degree, k_fold, k_indices, method, error, feature_augmentation=False, hyperparams = []):
-    loss_tr_tmp = []
-    loss_te_tmp = []
-    w_tmp = []
-    accuracy = []
-    
-    for k in range(k_fold):
-        loss_tr, loss_te, w , acc = cross_validation(y, x, degree, k, k_indices, method, error, feature_augmentation, hyperparams)
-        loss_tr_tmp.append(loss_tr)
-        loss_te_tmp.append(loss_te)    
-        w_tmp.append(w)
-        accuracy.append(acc)
-    
-    if not feature_augmentation:
-        w_mean = np.mean(w_tmp,axis=0)
-    else : 
-        w_mean=[]
-    #print("Accuracy = {}".format(accuracy))
-    return loss_tr_tmp, loss_te_tmp, w_mean, accuracy
+    return tx, index    
 
 
 def equal_class(y,x):

@@ -242,7 +242,7 @@ def predict_labels(weights, data):
     
     return y_pred
 
-def compute_loss(y, tx, w, error):
+def compute_loss(y, tx, w, error, lambdas=[]):
     """Calculate the loss.
     You can calculate the loss using method given in arguments.
     """
@@ -254,7 +254,7 @@ def compute_loss(y, tx, w, error):
     elif error == 'classification':return cal_classificationerror(y,y_pred)
     elif error == 'logl':return cal_loglike(y, tx, w)
     elif error == 'logl_r': return cal_loglike_r(y,tx,w,lambdas)
-    else: raise NotImplemented # AMS
+    else: raise NotImplementedError
 
 def cal_error(y, y_pred):
     """ Returns vector of 0,2 or -2, the difference between vector of labels and vector of predicted labels"""
@@ -307,6 +307,7 @@ def compute_gradient(y, tx, w):
     grad = -tx.T.dot(err) / len(err)
     return grad, err
 
+
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """Gradient descent algorithm."""
     w = initial_w
@@ -316,13 +317,13 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
         grad, _ = compute_gradient(y, tx, w)
         # gradient w by descent update
         w = w - gamma * grad
-
-    print("Gradient Descent (gamma = {gamma} ,{ti}): w ={weights}".format(gamma = gamma, ti=max_iters - 1,weights =w))     
-    return w
+        
+    print("Gradient Descent (gamma = {gamma} ,{ti}): w ={weights}".format(gamma = gamma, ti=max_iters - 1,weights =w))    
+    loss = compute_loss(y, tx, w, 'rmse')
+    return w, loss
 
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
     """Stochastic gradient descent."""
-    # Define parameters to store w and loss
     w = initial_w
 
     for n_iter in range(max_iters):
@@ -332,23 +333,26 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
                 grad, _ = compute_gradient(y_batch, tx_batch, w)
                 # update w through the stochastic gradient update
                 w = w - gamma * grad
-        #print("SGD({bi}/{ti}): loss={l}".format(
-        #      bi=n_iter, ti=max_iters - 1, l=loss))
+
     print("SGD(gamma = {gamma},{ti}): w={weight}".format(gamma=gamma,ti=max_iters - 1,weight=w))
-    return w
+    loss = compute_loss(y, tx, w, 'rmse')
+    return w, loss
+
 
 def least_squares(y, tx):
     """Least squares optimisation. Returns the optimal weights vector"""
     weights = np.linalg.solve(tx.T.dot(tx), tx.T.dot(y))
-    #print("Least squares: w={}".format(weights))
-    return weights
+
+    loss = compute_loss(y, tx, weights, 'rmse')
+    return weights, loss
 
 def ridge_regression(y, tx, lambda_):
     """Least squares with regularisation. Returns optimal weight vector"""
     aI = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
     weights = np.linalg.solve(tx.T.dot(tx) + aI, tx.T.dot(y))
-    #print("Ridge regression: w={}".format(w))
-    return weights
+    
+    loss = compute_loss(y, tx, weights, 'rmse')
+    return weights, loss
 
 def sigmoid(z):
     return np.exp(z) / (1 + np.exp(z))
@@ -368,7 +372,8 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         w = w - gamma * grad
 
     print("Logistic regression: w={}".format(w))
-    return w
+    loss = compute_loss(y, tx, w, 'logl')
+    return w, loss
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Regularized logistic regression with Gradient descent algorithm."""
@@ -378,8 +383,9 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
         gradient = compute_logistic_gradient(y, tx, w) + 2 * lambda_ * w
         w -= gamma * gradient
         
-    print("Regularized logistic regression (lambda = {lamb},{ti}) : w={weights}".format(lamb = lambda_, ti=max_iters - 1,weights =w))   
-    return w
+    print("Regularized logistic regression (lambda = {lamb},{ti}) : w={weights}".format(lamb = lambda_, ti=max_iters - 1,weights =w))
+    loss = compute_loss(y, tx, w, 'logl_r')
+    return w, loss
 
 # =============================================================================
 # Cross validation
@@ -457,7 +463,7 @@ def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class'
             loss_te.append(concate_fold(loss_te_tmp))
             accuracy.append(acc_tmp)
             w.append(w_tmp)
-    else: raise NotImplemented 
+    else: raise NotImplementedError
     return loss_tr, loss_te, w, accuracy
 
 
@@ -520,12 +526,12 @@ def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentat
     elif method == 'lsSGD': w = least_squares_SGD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2], hyperparams[3]) # stoch GD
     elif method == 'log': w = logistic_regression(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # logistic reg
     elif method == 'rlog': w =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], np.zeros(tx_tr.shape[1]), hyperparams[1], hyperparams[2]) # regularised logistic reg
-    else: raise NotImplemented
+    else: raise NotImplementedError
    
     if method == 'log':
         loss_tr = cal_loglike(y_tr, tx_tr, w)
         loss_te = cal_loglike(y_te, tx_te, w)
-    elif method == 'rlog': # A REVOIR SI CEST BON !!!!
+    elif method == 'rlog':
         loss_tr = cal_loglike_r(y_tr, tx_tr, w, hyperparams[3])
         loss_te = cal_loglike_r(y_te, tx_te, w, hyperparams[3])
     else :

@@ -31,7 +31,7 @@ number_of_std = 3                                                   # 1, 2, 3, .
 
 # Feature engineering
 augmentation = False                                                # True / False
-        
+
 # Hyperparametes : Lambdas and degree for each subset
 lambdas = [2.15443469e-15,7.19685673e-16,2.15443469e-15,6.30957344e-16]
 final_degree = [16,15,16,16]

@@ -9,10 +9,6 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
-from implementations import *
-from helpers_optimization import *
-from helpers_visualization import *
-
 # =============================================================================
 # Load and submit data
 # =============================================================================

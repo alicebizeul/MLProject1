@@ -6,10 +6,9 @@ Created on Mon Oct 28 11:54:42 2019
 """
 
 import numpy as np
-
-from implementations import *
 from helpers_data import *
-from helpers_visualization import *
+from implementations import *
+
 
 # =============================================================================
 # Loss functions

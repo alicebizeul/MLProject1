@@ -8,10 +8,6 @@ Created on Mon Oct 28 12:03:26 2019
 import matplotlib.pyplot as plt
 import numpy as np
 
-from implementations import *
-from helpers_optimization import *
-from helpers_data import *
-
 # =============================================================================
 # Visualization methods 
 # =============================================================================

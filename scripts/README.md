@@ -2,26 +2,26 @@
 ## Team: "BuzzLastyear" 
 
 
-## run.py
+### run.py
 This file is used in order to produce predictions under a .csv format.
 In order to customize the submission, first upload the data (training set and test set) stored in a "data" folder, and complete the basic hyperparameters of the model in the fourth cell (lambda and polynomial expansion degree). For each subset, it is possible to fine-tune the following hyperparameters:
-\n
-	- The undefined feature DER_mass_MMC can be set to the median/mean of the feature, or all the samples can be deleted.\n 
-	- Outliers can be removed while choosing the threshold value, as a multiple of the standard deviation. \n
-	- Augmentation of features, i.e. XiXj, can be activated or not (where Xi and Xj are almost uncorrelated features). \n
-	- Augmentation of feature, e.g. XiXj, can be activated or not. \n
+<br/>
+	- The undefined feature DER_mass_MMC can be set to the median/mean of the feature, or all the samples can be deleted. <br/> 
+	- Outliers can be removed while choosing the threshold value, as a multiple of the standard deviation. <br/>
+	- Augmentation of features, i.e. XiXj, can be activated or not (where Xi and Xj are almost uncorrelated features). <br/>
+	- Augmentation of feature, e.g. XiXj, can be activated or not. <br/>
 
 To get the output submission, just run the file, and a 'BuzzLastyear.csv' (i.e. the name of our team) will be created in the data folder.
 
 
-## implementations.py
+### implementations.py
 
 As requested, this file contains the 6 following optimization functions: 
 **least_squares_GD**(y, tx, initial w, max iters, gamma), **least_squares_SGD**(y, tx, initial w, max iters, gamma), **least_squares**(y, tx), **ridge_regression**(y, tx, lambda ), **logistic_regression**(y, tx, initial w, max iters, gamma), **reg_logistic_regression**(y, tx, lambda , initial w, max iters, gamma)
 are in this single python file.
 
 
-## helpers_*.py
+### helpers_*.py
 
 Three helpers files (helpers_data.py, helpers_visualization.py, helpers_optimization.py) contain our own functions. All these files are imported in the run.py
 1. helpers_data.py:		Contains the implementations to load the data, split the dataset, explore the features characteristcs and implement feature engineering.

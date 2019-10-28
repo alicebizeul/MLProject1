@@ -97,22 +97,31 @@ def result_crossval_accuracy_feat(acc, lambdas):
     best_lambdas = [lambdas[i] for i in np.argmax(acc, axis=1)]
     best_feature_set = np.argmax(np.mean(acc,axis=1))
     print("Best combination : {} features, lambda {}, acc. {}".format(best_feature_set+1, best_lambdas[best_feature_set], np.max(np.mean(acc,axis=1)))) # index 0 : 1 feature
-
-
-def bias_variance_decomposition_visualization(degrees, loss_tr, loss_te):
+  
+    
+    
+def bias_variance_decomposition_visualization(degrees, loss_tr, loss_te, acc):
     """visualize the bias variance decomposition."""
     
     loss_tr = np.array(loss_tr)
     loss_te = np.array(loss_te)
+    acc = np.array(acc)
     
     tr_mean = np.expand_dims(np.mean(loss_tr, axis=0), axis=0)
     te_mean = np.expand_dims(np.mean(loss_te, axis=0), axis=0)
-    plt.plot(degrees,loss_tr.T,'b',linestyle="-",color=([0.7, 0.7, 1]),label='train',linewidth=0.3)
-    plt.plot(degrees,loss_te.T,'r',linestyle="-",color=[1, 0.7, 0.7],label='test',linewidth=0.3)
-    plt.plot(degrees,tr_mean.T,'b',linestyle="-",label='train',linewidth=3)
-    plt.plot(degrees,te_mean.T,'r',linestyle="-",label='test',linewidth=3)
-    plt.ylim(0.2, 0.7)
-    plt.xlabel("degree")
-    plt.ylabel("error")
-    plt.title("Bias-Variance Decomposition")
-    plt.savefig("bias_variance")
+    acc_mean = np.expand_dims(np.mean(acc, axis=0), axis=0)
+    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+    axes[0].plot(degrees,loss_tr.T,'b',linestyle="-",color=([0.7, 0.7, 1]),linewidth=0.3)
+    axes[0].plot(degrees,loss_te.T,'r',linestyle="-",color=[1, 0.7, 0.7],linewidth=0.3)
+    axes[0].plot(degrees,tr_mean.T,'b',linestyle="-",label='train',linewidth=3)
+    axes[0].plot(degrees,te_mean.T,'r',linestyle="-",label='test',linewidth=3)
+    axes[0].set_xlabel("degree")
+    axes[0].set_ylabel("error")
+    axes[0].set_title("Bias-Variance Decomposition")
+    
+    axes[1].plot(degrees,acc.T,'b',linestyle="-",color=([0.7, 0.7, 1]),linewidth=0.3)
+    axes[1].plot(degrees,acc_mean.T,'b',linestyle="-",linewidth=3)
+    axes[1].set_xlabel("degree")
+    axes[1].set_ylabel("accuracy")
+    axes[1].set_title("Accuracy vs. complexity")
+    fig.savefig("bias_variance")

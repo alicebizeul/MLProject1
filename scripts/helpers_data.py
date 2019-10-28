@@ -322,9 +322,9 @@ def compute_correlations(tX, y, labels, threshold=0.85, print_correlated_pairs=F
     # Rank feature importance based on correlation with output
     correlation_output = np.abs(correlation_output)
     ranked_index = correlation_output.argsort()
-    ranked_features = [labels[i] for i in ranked_index]
+    #ranked_features = [labels[i] for i in ranked_index]
     print("Ranked absolute correlation with output: ", np.sort(correlation_output))
-    print("Ranked features: ", ranked_features)
+    #print("Ranked features: ", ranked_features)
 
     if print_correlated_pairs:
         #Print pairs of features highly correlated (above threshold)

@@ -28,6 +28,7 @@ replace_undefined_features = [True, True, True, True]               # True / Fal
 methode_of_replacement = ['median', 'median', 'median', 'median']   # 'median' / 'mean' / 'delete'
 suppression_of_outliers = [False, False, False, False]              # True / False
 number_of_std = 3                                                   # 1, 2, 3, ...
+class_equal = False                                                 # True / False
 
 # Feature engineering
 augmentation = False                                                # True / False
@@ -64,6 +65,12 @@ ss0_tX_train = build_poly(ss0_tX, final_degree[0], augmentation, tx_aug=ss0_tX_t
 ss1_tX_train = build_poly(ss1_tX, final_degree[1], augmentation, tx_aug=ss1_tX_train_aug)
 ss2_tX_train = build_poly(ss2_tX, final_degree[2], augmentation, tx_aug=ss2_tX_train_aug)
 ss3_tX_train = build_poly(ss3_tX, final_degree[3], augmentation, tx_aug=ss3_tX_train_aug)
+
+if class_equal:
+    ss0_y, ss0_tX_train = equal_class(ss0_y,ss0_tX_train)
+    ss1_y, ss1_tX_train = equal_class(ss1_y,ss1_tX_train)
+    ss2_y, ss2_tX_train = equal_class(ss2_y,ss2_tX_train)
+    ss3_y, ss3_tX_train = equal_class(ss3_y,ss3_tX_train)
 
 # Standardisation
 ss0_tX_train, mean0, std0 = standardize(ss0_tX_train)

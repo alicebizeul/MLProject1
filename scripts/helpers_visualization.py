@@ -2,11 +2,15 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Oct 28 12:03:26 2019
-
 @author: Juliane
 """
+
 import matplotlib.pyplot as plt
 import numpy as np
+
+from implementations import *
+from helpers_optimization import *
+from helpers_data import *
 
 # =============================================================================
 # Visualization methods 
@@ -59,6 +63,7 @@ def cross_validation_visualization(lambds, loss_tr, loss_te):
     plt.grid(True)
     plt.savefig("cross_validation")
 
+
 def result_crossval(loss_tr,loss_te,degree):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].boxplot(loss_tr)
@@ -70,6 +75,7 @@ def result_crossval(loss_tr,loss_te,degree):
     axes[1].set_title(title_1)
     axes[1].set_ylabel('Error')
     plt.show()
+ 
     
 def result_crossval_accuracy(acc,degree):
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -83,6 +89,7 @@ def result_crossval_accuracy(acc,degree):
     axes[1].set_title(title_1)
     axes[1].set_ylabel('Accuracy')
     plt.show()
+ 
     
 def result_crossval_accuracy_feat(acc, lambdas):
 

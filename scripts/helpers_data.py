@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Oct 28 11:59:33 2019
-
 @author: Juliane
 """
 
@@ -10,6 +9,9 @@ import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
+from implementations import *
+from helpers_optimization import *
+from helpers_visualization import *
 
 # =============================================================================
 # Load and submit data
@@ -257,6 +259,7 @@ def feat_augmentation(tx, threshold=0.003, train_set=True, index=[]):
     
     return tx, index 
 
+
 def build_poly(tx, degree, feature_augmentation=False, tx_aug=[]):
     """Creation of feature matrix with vector of ones + features vector using the appropriate degree given by the argument"""
     tx_new = np.ones(tx.shape[0])
@@ -266,11 +269,13 @@ def build_poly(tx, degree, feature_augmentation=False, tx_aug=[]):
         tx_new = np.c_[tx_new,tx**i]
     return tx_new
 
+
 def standardize(tx , mean = [], std = []):
     if mean == [] and std == []:
         mean = np.mean(tx[:,1:], axis = 0)
         std = np.std(tx[:,1:],axis = 0)
     return np.c_[tx[:,0],(tx[:,1:]- mean)/std], mean, std
+
 
 def batch_iter(y, tx, batch_size, num_batches=1):
     """
@@ -290,7 +295,6 @@ def batch_iter(y, tx, batch_size, num_batches=1):
         end_index = min((batch_num + 1) * batch_size, data_size)
         if start_index != end_index:
             yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
-            
    
 
 # =============================================================================

@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Oct  8 10:31:41 2019
-
 @author: Juliane
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
+
 from helpers_optimization import *
 from helpers_data import *
 from helpers_visualization import *
@@ -30,6 +30,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     print("Gradient Descent (gamma = {gamma} ,{ti}): w ={weights}".format(gamma = gamma, ti=max_iters - 1,weights =w))    
     loss = compute_loss(y, tx, w, 'rmse')
     return w, loss
+
 
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
     """Stochastic gradient descent."""
@@ -55,6 +56,7 @@ def least_squares(y, tx):
     loss = compute_loss(y, tx, weights, 'rmse')
     return weights, loss
 
+
 def ridge_regression(y, tx, lambda_):
     """Least squares with regularisation. Returns optimal weight vector"""
     aI = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
@@ -76,6 +78,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
     print("Logistic regression: w={}".format(w))
     loss = compute_loss(y, tx, w, 'logl')
     return w, loss
+
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Regularized logistic regression with Gradient descent algorithm."""

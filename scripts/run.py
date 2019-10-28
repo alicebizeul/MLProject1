@@ -5,9 +5,10 @@ Created on Sat Oct 26 19:35:33 2019
 """
 import numpy as np
 import os
-from proj1_helpers import *
 from implementations import * 
-from datetime import datetime
+from helpers_optimization import *
+from helpers_data import *
+from helpers_visualization import *
 
 #%% Load the training set into feature matrix, class labels, and event ids
 
@@ -20,34 +21,49 @@ labels_feature = np.genfromtxt(DATA_TRAIN_PATH, delimiter=",", dtype=str, max_ro
 DATA_TEST_PATH = os.path.dirname(os.getcwd()) + '/data/test.csv'
 _, tX_test, ids_test = load_csv_data(DATA_TEST_PATH)
 
+#%% Parameters of the model initiation
+
+# Processing the data for each subset
+replace_undefined_features = [True, True, True, True]
+methode_of_replacement = ['median', 'median', 'median', 'median']
+suppression_of_outliers = [False, False, False, False]
+number_of_std = 3
+
+# Feature engineering 
+augmentation = False
+
+# Hyperparametes : Lambdas and degree for each subset
+lambdas = [2.15443469e-15,7.19685673e-16,2.15443469e-15,6.30957344e-16]
+final_degree = [16,15,16,16]
+
+
 #%% Feature Engineering
 
 # Subsetting the dataset
 ss0_tX, ss0_y, ss1_tX, ss1_y, ss2_tX, ss2_y, ss3_tX, ss3_y, labels_feat = split_subsets(tX, y,labels_feature)
 
-ss0_tX, ss0_y, median0 = feature_processing (ss0_tX, ss0_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=[])
-ss1_tX, ss1_y, median1 = feature_processing (ss1_tX, ss1_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=[])
-ss2_tX, ss2_y, median2 = feature_processing (ss2_tX, ss2_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=[])
-ss3_tX, ss3_y, median3 = feature_processing (ss3_tX, ss3_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=[])
+ss0_tX, ss0_y, median0 = feature_processing (ss0_tX, ss0_y, methode_of_replacement[0], replace_undefined_features[0], suppression_of_outliers[0], number_of_std, ref_median=[])
+ss1_tX, ss1_y, median1 = feature_processing (ss1_tX, ss1_y, methode_of_replacement[1], replace_undefined_features[1], suppression_of_outliers[1], number_of_std, ref_median=[])
+ss2_tX, ss2_y, median2 = feature_processing (ss2_tX, ss2_y, methode_of_replacement[2], replace_undefined_features[2], suppression_of_outliers[2], number_of_std, ref_median=[])
+ss3_tX, ss3_y, median3 = feature_processing (ss3_tX, ss3_y, methode_of_replacement[3], replace_undefined_features[3], suppression_of_outliers[3], number_of_std, ref_median=[])
     
-
-#%% Hyperparameters initiation
-
-lambdas = [2.15443469e-15,7.19685673e-16,2.15443469e-15,1.0e-15]
-final_degree = [16,15,16,14]
-
-
 #%% Final Training on full data set
 
-ss0_tX_train_aug, index_0 = feat_augmentation(ss0_tX, 0.003, True)
-ss1_tX_train_aug, index_1 = feat_augmentation(ss1_tX, 0.003, True)
-ss2_tX_train_aug, index_2 = feat_augmentation(ss2_tX, 0.003, True)
-ss3_tX_train_aug, index_3 = feat_augmentation(ss3_tX, 0.003, True)
+ss0_tX_train_aug = []
+ss1_tX_train_aug = []
+ss2_tX_train_aug = []
+ss3_tX_train_aug = []
 
-ss0_tX_train = build_poly(ss0_tX, final_degree[0], feature_augmentation=True, tx_aug=ss0_tX_train_aug)
-ss1_tX_train = build_poly(ss1_tX, final_degree[1], feature_augmentation=True, tx_aug=ss1_tX_train_aug)
-ss2_tX_train = build_poly(ss2_tX, final_degree[2], feature_augmentation=True, tx_aug=ss2_tX_train_aug)
-ss3_tX_train = build_poly(ss3_tX, final_degree[3], feature_augmentation=True, tx_aug=ss3_tX_train_aug)
+if augmentation:
+    ss0_tX_train_aug, index_0 = feat_augmentation(ss0_tX, 0.003, True)
+    ss1_tX_train_aug, index_1 = feat_augmentation(ss1_tX, 0.003, True)
+    ss2_tX_train_aug, index_2 = feat_augmentation(ss2_tX, 0.003, True)
+    ss3_tX_train_aug, index_3 = feat_augmentation(ss3_tX, 0.003, True)
+
+ss0_tX_train = build_poly(ss0_tX, final_degree[0], augmentation, tx_aug=ss0_tX_train_aug)
+ss1_tX_train = build_poly(ss1_tX, final_degree[1], augmentation, tx_aug=ss1_tX_train_aug)
+ss2_tX_train = build_poly(ss2_tX, final_degree[2], augmentation, tx_aug=ss2_tX_train_aug)
+ss3_tX_train = build_poly(ss3_tX, final_degree[3], augmentation, tx_aug=ss3_tX_train_aug)
 
 # Standardisation
 ss0_tX_train, mean0, std0 = standardize(ss0_tX_train)
@@ -56,32 +72,38 @@ ss2_tX_train, mean2, std2 = standardize(ss2_tX_train)
 ss3_tX_train, mean3, std3 = standardize(ss3_tX_train)
 
 # Model on the whole training set
-weights0 = ridge_regression(ss0_y, ss0_tX_train, lambdas[0])
-weights1 = ridge_regression(ss1_y, ss1_tX_train, lambdas[1])
-weights2 = ridge_regression(ss2_y, ss2_tX_train, lambdas[2])
-weights3 = ridge_regression(ss3_y, ss3_tX_train, lambdas[3])
+weights0,_ = ridge_regression(ss0_y, ss0_tX_train, lambdas[0])
+weights1,_ = ridge_regression(ss1_y, ss1_tX_train, lambdas[1])
+weights2,_ = ridge_regression(ss2_y, ss2_tX_train, lambdas[2])
+weights3,_ = ridge_regression(ss3_y, ss3_tX_train, lambdas[3])
 
-#%% Splitting the set data
+#%% Feature Engineering
 
+# Subsetting the test data
 ss0_tX_test, index0, ss1_tX_test, index1, ss2_tX_test, index2, ss3_tX_test, index3, labels_feat = split_subsets_test(tX_test, labels_feature)
 
-#%%
+ss0_tX_test,_,_ = feature_processing (ss0_tX_test, ss0_y, methode_of_replacement[0], replace_undefined_features[0], suppression_of_outliers[0], number_of_std, ref_median=median0)
+ss1_tX_test,_,_ = feature_processing (ss1_tX_test, ss1_y, methode_of_replacement[1], replace_undefined_features[1], suppression_of_outliers[1], number_of_std, ref_median=median1)
+ss2_tX_test,_,_ = feature_processing (ss2_tX_test, ss2_y, methode_of_replacement[2], replace_undefined_features[2], suppression_of_outliers[2], number_of_std, ref_median=median2)
+ss3_tX_test,_,_ = feature_processing (ss3_tX_test, ss3_y, methode_of_replacement[3], replace_undefined_features[3], suppression_of_outliers[3], number_of_std, ref_median=median3)
 
-#Build the model
-ss0_tX_test,_,_ = feature_processing (ss0_tX_test, ss0_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median0)
-ss1_tX_test,_,_ = feature_processing (ss1_tX_test, ss1_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median1)
-ss2_tX_test,_,_ = feature_processing (ss2_tX_test, ss2_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median2)
-ss3_tX_test,_,_ = feature_processing (ss3_tX_test, ss3_y, 'median', replace_feature = True, suppr_outliers = False, threshold = 3, ref_median=median3)
+#%% Building the model
 
-ss0_tX_test_aug, _ = feat_augmentation(ss0_tX_test, 0.003, False, index_0)
-ss1_tX_test_aug, _ = feat_augmentation(ss1_tX_test, 0.003, False, index_1)
-ss2_tX_test_aug, _ = feat_augmentation(ss2_tX_test, 0.003, False, index_2)
-ss3_tX_test_aug, _ = feat_augmentation(ss3_tX_test, 0.003, False, index_3)
+ss0_tX_test_aug = []
+ss1_tX_test_aug = []
+ss2_tX_test_aug = []
+ss3_tX_test_aug = []
 
-ss0_tX_test = build_poly(ss0_tX_test, final_degree[0], feature_augmentation=True, tx_aug=ss0_tX_test_aug)
-ss1_tX_test = build_poly(ss1_tX_test, final_degree[1], feature_augmentation=True, tx_aug=ss1_tX_test_aug)
-ss2_tX_test = build_poly(ss2_tX_test, final_degree[2], feature_augmentation=True, tx_aug=ss2_tX_test_aug)
-ss3_tX_test = build_poly(ss3_tX_test, final_degree[3], feature_augmentation=True, tx_aug=ss3_tX_test_aug)
+if augmentation:
+    ss0_tX_test_aug, _ = feat_augmentation(ss0_tX_test, 0.003, False, index_0)
+    ss1_tX_test_aug, _ = feat_augmentation(ss1_tX_test, 0.003, False, index_1)
+    ss2_tX_test_aug, _ = feat_augmentation(ss2_tX_test, 0.003, False, index_2)
+    ss3_tX_test_aug, _ = feat_augmentation(ss3_tX_test, 0.003, False, index_3)
+
+ss0_tX_test = build_poly(ss0_tX_test, final_degree[0], augmentation, tx_aug=ss0_tX_test_aug)
+ss1_tX_test = build_poly(ss1_tX_test, final_degree[1], augmentation, tx_aug=ss1_tX_test_aug)
+ss2_tX_test = build_poly(ss2_tX_test, final_degree[2], augmentation, tx_aug=ss2_tX_test_aug)
+ss3_tX_test = build_poly(ss3_tX_test, final_degree[3], augmentation, tx_aug=ss3_tX_test_aug)
 
 # standardize test data
 ss0_tX_test, _, _ = standardize(ss0_tX_test, mean0, std0)

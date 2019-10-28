@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Oct 28 11:54:42 2019
-
 @author: Juliane
 """
+
 import numpy as np
-from helpers_data import *
+
 from implementations import *
+from helpers_data import *
+from helpers_visualization import *
 
 # =============================================================================
 # Loss functions
@@ -31,13 +33,16 @@ def cal_error(y, y_pred):
     """ Returns vector of 0,2 or -2, the difference between vector of labels and vector of predicted labels"""
     return y - y_pred
     
+
 def cal_mse(error):
     """Returns the mean square error for vector e."""
     return 1/2*np.mean(error**2)
 
+
 def cal_rmse(error):
     """Returns the root mean square error using the mean square error as input """
     return np.sqrt(2*cal_mse(error))
+
 
 def cal_classerror(y,y_pred):
     """Returns the class error (percentage of fails) which takes 
@@ -45,6 +50,7 @@ def cal_classerror(y,y_pred):
     class1 = np.sum(y_pred[y ==1] != 1)/np.sum(y == 1)
     class2 = np.sum(y_pred[y == -1] != -1)/np.sum(y == -1)
     return 0.5*(class1 + class2)
+
 
 def cal_classificationerror(y, y_pred):
     """Returns the classification error = percentage of fails, does not 
@@ -61,9 +67,11 @@ def cal_loglike(y, tx, w):
     loss = y.T.dot(np.log(sigmoid_fct+delta)) + (1 - y).T.dot(np.log(1 - sigmoid_fct+delta))
     return np.squeeze(-loss)
 
+
 def cal_loglike_r(y, tx, w, lambda_):
      return cal_loglike(y, tx, w) + lambda_ * np.squeeze(w.T.dot(w))
  
+    
 def sigmoid(z):
     return np.exp(z) / (1 + np.exp(z))
  
@@ -216,12 +224,12 @@ def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentat
     #print('Mean and std of each feature in train set: {} , {}'.format(tx_tr.mean(axis = 0),tx_tr.std(axis = 0)))
     #print('Mean and std of each feature in test set: {} , {}'.format(tx_te.mean(axis = 0),tx_te.std(axis = 0)))
     
-    if method == 'rr': w = ridge_regression(y_tr, tx_tr, hyperparams[0]) # ridge regression
-    elif method == 'ls': w = least_squares(y_tr, tx_tr) # least square
-    elif method == 'lsGD': w = least_squares_GD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # gradient descent
-    elif method == 'lsSGD': w = least_squares_SGD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2], hyperparams[3]) # stoch GD
-    elif method == 'log': w = logistic_regression(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # logistic reg
-    elif method == 'rlog': w =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], np.zeros(tx_tr.shape[1]), hyperparams[1], hyperparams[2]) # regularised logistic reg
+    if method == 'rr': w,_ = ridge_regression(y_tr, tx_tr, hyperparams[0]) # ridge regression
+    elif method == 'ls': w,_ = least_squares(y_tr, tx_tr) # least square
+    elif method == 'lsGD': w,_ = least_squares_GD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # gradient descent
+    elif method == 'lsSGD': w,_ = least_squares_SGD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2], hyperparams[3]) # stoch GD
+    elif method == 'log': w,_ = logistic_regression(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # logistic reg
+    elif method == 'rlog': w,_ =reg_logistic_regression(y_tr, tx_tr, hyperparams[3], np.zeros(tx_tr.shape[1]), hyperparams[1], hyperparams[2]) # regularised logistic reg
     else: raise NotImplementedError
    
     if method == 'log':
@@ -239,8 +247,6 @@ def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentat
     acc = accuracy(y_te,y_pred)
     
     return loss_tr, loss_te, w, acc
-
-
 
 
 def cross_validation_demo_featselect(y, x, labels, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
@@ -271,6 +277,7 @@ def cross_validation_demo_featselect(y, x, labels, degree, seed, k_fold = 4, cla
     #cross_validation_visualization(hyperparams, loss_tr, loss_te) #A MODIFIER    
     return loss_tr, loss_te, w, accuracy
 
+
 def equal_class(y,x):
     y_class0 = y[y==-1]
     y_class1 = y[y==1]
@@ -299,6 +306,7 @@ def predict_labels(weights, data):
     y_pred[np.where(y_pred > 0)] = 1
     
     return y_pred
+
 
 def accuracy(y,y_pred):
     """ Returns accuracy of classification = percentage of success"""

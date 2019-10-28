@@ -21,17 +21,17 @@ labels_feature = np.genfromtxt(DATA_TRAIN_PATH, delimiter=",", dtype=str, max_ro
 DATA_TEST_PATH = os.path.dirname(os.getcwd()) + '/data/test.csv'
 _, tX_test, ids_test = load_csv_data(DATA_TEST_PATH)
 
-#%% Parameters of the model initiation
+#%% SETTINGS of the parameters of the model
 
 # Processing the data for each subset
-replace_undefined_features = [True, True, True, True]
-methode_of_replacement = ['median', 'median', 'median', 'median']
-suppression_of_outliers = [False, False, False, False]
-number_of_std = 3
+replace_undefined_features = [True, True, True, True]               # True / False
+methode_of_replacement = ['median', 'median', 'median', 'median']   # 'median' / 'mean' / 'delete'
+suppression_of_outliers = [False, False, False, False]              # True / False
+number_of_std = 3                                                   # 1, 2, 3, ...
 
-# Feature engineering 
-augmentation = False
-
+# Feature engineering
+augmentation = False                                                # True / False
+        
 # Hyperparametes : Lambdas and degree for each subset
 lambdas = [2.15443469e-15,7.19685673e-16,2.15443469e-15,6.30957344e-16]
 final_degree = [16,15,16,16]

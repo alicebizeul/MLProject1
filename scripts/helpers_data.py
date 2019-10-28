@@ -267,6 +267,8 @@ def build_poly(tx, degree, feature_augmentation=False, tx_aug=[]):
 
 
 def standardize(tx , mean = [], std = []):
+    """ Standardisation of a matrix tx, if mean and std given in argument, the matrix is standardized using 
+    those values; Returns matrix with standardized columns """
     if mean == [] and std == []:
         mean = np.mean(tx[:,1:], axis = 0)
         std = np.std(tx[:,1:],axis = 0)
@@ -279,6 +281,9 @@ def batch_iter(y, tx, batch_size, num_batches=1):
     Takes as input two iterables (here the output desired values 'y' and the input data 'tx')
     Outputs an iterator which gives mini-batches of `batch_size` matching elements from `y` and `tx`.
     Data can be randomly shuffled to avoid ordering in the original data messing with the randomness of the minibatches.
+    Example of use :
+    for minibatch_y, minibatch_tx in batch_iter(y, tx, 32):
+        <DO-SOMETHING>
     """
     data_size = len(y)
 

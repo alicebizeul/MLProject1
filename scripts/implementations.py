@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
-    """Gradient descent algorithm."""
+    """Least square Gradient descent algorithm. Returns the updated weights and the loss value for this set of weights"""
     
     from helpers_optimization import compute_gradient, compute_loss
     
@@ -32,24 +32,24 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
 
 
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
-    """Stochastic gradient descent."""
+    """Stochastic gradient descent. Returns the updated weights and the loss value for this set of weights"""
     
     from helpers_data import batch_iter
     from helpers_optimization import compute_gradient, compute_loss
     
-    w = initial_w
+    weights = initial_w
 
-    for n_iter in range(max_iters):
-        for batch in range(batchsize):
+    for n_iter in range(max_iters):         # iterations 
+        for batch in range(batchsize):      # for different batchsize
             for y_batch, tx_batch in batch_iter(y, tx, batch_size=batch, num_batches=1):
                 # compute a stochastic gradient and loss
                 grad, _ = compute_gradient(y_batch, tx_batch, w)
                 # update w through the stochastic gradient update
-                w = w - gamma * grad
+                weights = w - gamma * grad
 
-    print("SGD(gamma = {gamma},{ti}): w={weight}".format(gamma=gamma,ti=max_iters - 1,weight=w))
-    loss = compute_loss(y, tx, w, 'rmse')
-    return w, loss
+    print("SGD(gamma = {gamma},{ti}): w={weight}".format(gamma=gamma,ti=max_iters - 1,weight=weights))
+    loss = compute_loss(y, tx, weights, 'rmse')
+    return weights, loss
 
 
 def least_squares(y, tx):
@@ -76,7 +76,7 @@ def ridge_regression(y, tx, lambda_):
 
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
-    """Logistic regression with Gradient descent algorithm."""
+    """Logistic regression with Gradient descent algorithm. Returns the updated weights and the loss value for this set of weights"""
     
     from helpers_optimization import compute_logistic_gradient, compute_loss
     
@@ -93,7 +93,7 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
 
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
-    """Regularized logistic regression with Gradient descent algorithm."""
+    """Regularized logistic regression with Gradient descent algorithm. Returns the updated weights and the loss value for this set of weights"""
     
     from helpers_optimization import compute_logistic_gradient, compute_loss
     

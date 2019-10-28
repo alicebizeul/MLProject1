@@ -49,7 +49,7 @@ def scatter_visualization(label, feature_1,feature_2,index):
           
 
 def cross_validation_visualization(lambds, loss_tr, loss_te):
-    """visualization the curves of mse_tr and mse_te."""
+    """Visualisation of train and test errors over cross validation folds"""
     plt.semilogx(lambds, loss_tr, marker=".", color='b', label='train error')
     plt.semilogx(lambds, loss_te, marker=".", color='r', label='test error')
     plt.xlabel("lambda")
@@ -61,6 +61,7 @@ def cross_validation_visualization(lambds, loss_tr, loss_te):
 
 
 def result_crossval(loss_tr,loss_te,degree):
+    """Visualisation of train and test errors over tested degrees over cross validation folds"""
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].boxplot(loss_tr)
     title_0 = "Train Errors of {deg} degree".format(deg=degree)
@@ -74,6 +75,7 @@ def result_crossval(loss_tr,loss_te,degree):
  
     
 def result_crossval_accuracy(acc,degree):
+    """Visualisation of test accuracies over tested degrees over cross validation folds"""
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
     axes[0].boxplot(acc)
     title_0 = "Accuracy of {deg} degree".format(deg=degree)
@@ -88,7 +90,7 @@ def result_crossval_accuracy(acc,degree):
  
     
 def result_crossval_accuracy_feat(acc, lambdas):
-
+    """Visualisation of test accuracies over tested regularisation terms over cross validation folds"""
     acc = np.mean(acc, axis=2)
     fig, axes = plt.subplots(1, 1, figsize=(12, 4))
     axes.plot(np.mean(acc,axis=1))

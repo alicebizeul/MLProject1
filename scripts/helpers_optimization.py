@@ -65,10 +65,12 @@ def cal_loglike(y, tx, w):
 
 
 def cal_loglike_r(y, tx, w, lambda_):
+    """Computes and returns the negative log likelihood with additional regularization terms"""
      return cal_loglike(y, tx, w) + lambda_ * np.squeeze(w.T.dot(w))
  
     
 def sigmoid(z):
+    """Returns the value of a sigmoid with z as an input"""
     return np.exp(z) / (1 + np.exp(z))
  
 # =============================================================================
@@ -101,11 +103,14 @@ def build_k_indices(y, k_fold, seed):
     return np.array(k_indices)
 
 def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
+    """First step of the cross-val, function launches in notbooks; 
+    Returns the results of the cross-validation: train and test loss 
+    with optimal associated wieghts and accuracy over test sets"""
     
     if class_distribution == True : y, x = equal_class(y,x)
     k_indices = build_k_indices(y, k_fold, seed)
            
-    verify_proportion(y,k_indices)
+    verify_proportion(y,k_indices) # check class 1 proportion
     
     # cross validation
     loss_tr, loss_te, w, accuracy = choose_method(y, x, degree, seed, k_fold, k_indices, error, method, feature_augmentation, hyperparams)
@@ -114,6 +119,7 @@ def cross_validation_demo(y, x, degree, seed, k_fold = 4, class_distribution = F
 
 
 def choose_method(y, x, degree, seed, k_fold = 4, k_indices = [], error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
+    """ Selects the optimisation method to apply in the optimisation process; Called in cross_validation_demo"""
     
     loss_tr = []
     loss_te = []
@@ -189,7 +195,7 @@ def single_cross_val(y, x, degree, k_fold, k_indices, method, error, feature_aug
 
 
 def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentation, hyperparams):
-    """return the loss of ridge regression."""
+    """"""
     from helpers_data import feature_processing, feat_augmentation, standardize, build_poly
     from implementations import ridge_regression, least_squares, least_squares_GD, least_squares_SGD, logistic_regression, reg_logistic_regression
     
@@ -251,6 +257,9 @@ def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentat
 
 
 def cross_validation_demo_featselect(y, x, labels, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
+    """First step of the cross-val with feature selection procedure, function launches in notbooks; 
+    Returns the results of the cross-validation: train and test loss 
+    with optimal associated wieghts and accuracy over test sets"""
     
     from helpers_data import compute_correlations
     
@@ -282,6 +291,7 @@ def cross_validation_demo_featselect(y, x, labels, degree, seed, k_fold = 4, cla
 
 
 def equal_class(y,x):
+    """Randomly selects samples and removes excess samples from class non boson"""
     y_class0 = y[y==-1]
     y_class1 = y[y==1]
         
@@ -303,7 +313,7 @@ def verify_proportion(y,k_indices):
 # =============================================================================    
     
 def predict_labels(weights, data):
-    """Generates class predictions given weights, and a test data matrix"""
+    """Generates class predictions given weights, and a data matrix; Returns vector of predicted labels"""
     y_pred = np.dot(data, weights)
     y_pred[np.where(y_pred <= 0)] = -1
     y_pred[np.where(y_pred > 0)] = 1

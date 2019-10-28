@@ -9,6 +9,7 @@ In order to customize the submission, first upload the data (training set and te
 	- The undefined feature DER_mass_MMC can be set to the median/mean of the feature, or all the samples can be deleted. <br/> 
 	- Outliers can be removed while choosing the threshold value, as a multiple of the standard deviation. <br/>
 	- Augmentation of features, i.e. XiXj, can be activated or not (where Xi and Xj are almost uncorrelated features). <br/>
+	- Balance the class distribution since in the train set it is unbalanced. <br/>
 
 To get the output submission, just run the file, and a 'BuzzLastyear.csv' (i.e. the name of our team) will be created in the data folder.
 

@@ -7,7 +7,7 @@
 # run.py
 
 Upload the data (training set and test set), which are in a "data" folder on the
-The fourth cell allows the settings of the parameters for the model. For each subset, it is possible to tune the hyperparameters:
+The fourth cell allows the settings of the parameters for the model. For each subset, it is possible to fine-tune the hyperparameters:
 	- The undefined features of DER_mass_MMC can be set to the median/mean of the feature, or even all the sample delete. 
 	- Outliers of the train set can be removed while choosing the threshold value of the standardt deviation.
 	- Augmentatin of feature, i.e. XiXj, can be activated or not.

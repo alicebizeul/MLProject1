@@ -190,8 +190,8 @@ def single_cross_val(y, x, degree, k_fold, k_indices, method, error, feature_aug
 
 def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentation, hyperparams):
     """return the loss of ridge regression."""
-    from helpers_data import *
-    from implementations import *
+    from helpers_data import feature_processing, feat_augmentation, standardize, build_poly
+    from implementations import ridge_regression, least_squares, least_squares_GD, least_squares_SGD, logistic_regression, reg_logistic_regression
     
     
     # get k'th subgroup in test, others in train
@@ -252,7 +252,7 @@ def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentat
 
 def cross_validation_demo_featselect(y, x, labels, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
     
-    from helpers_data import *
+    from helpers_data import compute_correlations
     
     ranked_index=compute_correlations(x, y, labels, plot=False)
     x = np.fliplr(x[:,ranked_index])

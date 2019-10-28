@@ -237,7 +237,7 @@ def feat_augmentation(tx, threshold=0.003, train_set=True, index=[]):
     
     if train_set:
         corr_matrix = np.corrcoef(tx.T)
-        index = np.argwhere(corr_matrix < threshold) #set threshold as an argument
+        index = np.argwhere(corr_matrix < threshold)
     
     final_index = []
     for i in range(index.shape[0]):
@@ -252,8 +252,8 @@ def feat_augmentation(tx, threshold=0.003, train_set=True, index=[]):
             feat1  = tx[:,final_index[i][0]]
             feat2  = tx[:,final_index[i][1]]
             tx = np.c_[tx, np.multiply(feat1,feat2)]
-    
-    return tx, index 
+
+    return tx, final_index 
 
 
 def build_poly(tx, degree, feature_augmentation=False, tx_aug=[]):
@@ -322,9 +322,7 @@ def compute_correlations(tX, y, labels, threshold=0.85, print_correlated_pairs=F
     # Rank feature importance based on correlation with output
     correlation_output = np.abs(correlation_output)
     ranked_index = correlation_output.argsort()
-    #ranked_features = [labels[i] for i in ranked_index]
     print("Ranked absolute correlation with output: ", np.sort(correlation_output))
-    #print("Ranked features: ", ranked_features)
 
     if print_correlated_pairs:
         #Print pairs of features highly correlated (above threshold)

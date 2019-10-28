@@ -6,9 +6,6 @@ Created on Mon Oct 28 11:54:42 2019
 """
 
 import numpy as np
-from helpers_data import *
-from implementations import *
-
 
 # =============================================================================
 # Loss functions
@@ -192,8 +189,11 @@ def single_cross_val(y, x, degree, k_fold, k_indices, method, error, feature_aug
 
 
 def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentation, hyperparams):
-
     """return the loss of ridge regression."""
+    from helpers_data import *
+    from implementations import *
+    
+    
     # get k'th subgroup in test, others in train
     te_indice = k_indices[k]
     tr_indice = k_indices[~(np.arange(k_indices.shape[0]) == k)]
@@ -223,6 +223,8 @@ def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentat
     #print('Mean and std of each feature in train set: {} , {}'.format(tx_tr.mean(axis = 0),tx_tr.std(axis = 0)))
     #print('Mean and std of each feature in test set: {} , {}'.format(tx_te.mean(axis = 0),tx_te.std(axis = 0)))
     
+    
+    
     if method == 'rr': w,_ = ridge_regression(y_tr, tx_tr, hyperparams[0]) # ridge regression
     elif method == 'ls': w,_ = least_squares(y_tr, tx_tr) # least square
     elif method == 'lsGD': w,_ = least_squares_GD(y_tr, tx_tr, hyperparams[0], hyperparams[1], hyperparams[2]) # gradient descent
@@ -249,6 +251,8 @@ def cross_validation(y, x, degree, k, k_indices,method, error, feature_augmentat
 
 
 def cross_validation_demo_featselect(y, x, labels, degree, seed, k_fold = 4, class_distribution = False, error ='class', method='rr', feature_augmentation=False, hyperparams=[]):
+    
+    from helpers_data import *
     
     ranked_index=compute_correlations(x, y, labels, plot=False)
     x = np.fliplr(x[:,ranked_index])

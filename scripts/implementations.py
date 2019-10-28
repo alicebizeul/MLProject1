@@ -7,10 +7,6 @@ Created on Tue Oct  8 10:31:41 2019
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-from helpers_optimization import *
-from helpers_data import *
-from helpers_visualization import *
  
 # =============================================================================
 # Optimization Methods 
@@ -19,6 +15,9 @@ from helpers_visualization import *
 
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """Gradient descent algorithm."""
+    
+    from helpers_optimization import compute_gradient, compute_loss
+    
     w = initial_w
     
     for n_iter in range(max_iters):
@@ -34,6 +33,10 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
 
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
     """Stochastic gradient descent."""
+    
+    from helpers_data import batch_iter
+    from helpers_optimization import compute_gradient, compute_loss
+    
     w = initial_w
 
     for n_iter in range(max_iters):
@@ -51,6 +54,9 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma, batchsize):
 
 def least_squares(y, tx):
     """Least squares optimisation. Returns the optimal weights vector"""
+    
+    from helpers_optimization import compute_loss
+    
     weights = np.linalg.solve(tx.T.dot(tx), tx.T.dot(y))
 
     loss = compute_loss(y, tx, weights, 'rmse')
@@ -59,6 +65,9 @@ def least_squares(y, tx):
 
 def ridge_regression(y, tx, lambda_):
     """Least squares with regularisation. Returns optimal weight vector"""
+    
+    from helpers_optimization import compute_loss
+    
     aI = 2 * tx.shape[0] * lambda_ * np.identity(tx.shape[1])
     weights = np.linalg.solve(tx.T.dot(tx) + aI, tx.T.dot(y))
     
@@ -68,6 +77,9 @@ def ridge_regression(y, tx, lambda_):
 
 def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """Logistic regression with Gradient descent algorithm."""
+    
+    from helpers_optimization import compute_logistic_gradient, compute_loss
+    
     w = initial_w
     for n_iter in range(max_iters):
         # compute loss, gradient
@@ -82,6 +94,9 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
 
 def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """Regularized logistic regression with Gradient descent algorithm."""
+    
+    from helpers_optimization import compute_logistic_gradient, compute_loss
+    
     w = initial_w
     for n_iter in range(max_iters):
         #loss = compute_logistic_loss(y, tx, w) + lambda_ * np.squeeze(w.T.dot(w))
